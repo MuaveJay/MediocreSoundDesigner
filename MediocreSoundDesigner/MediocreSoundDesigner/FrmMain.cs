@@ -6,9 +6,9 @@ namespace MediocreSoundDesigner;
 public partial class FrmMain : Form {
   // fields
   private TrackManager trackManager;
-
-  // ctor
-  public FrmMain() {
+    private Track copiedTrack;
+    // ctor
+    public FrmMain() {
     InitializeComponent();
     Setup();
   }
@@ -17,7 +17,35 @@ public partial class FrmMain : Form {
   private void Setup() {
     DoubleBuffered = true;
     trackManager = new(panTracks);
-    menuEdit.DropDownItems.Add("Fade In", null, (sender, e) =>
+        menuEdit.DropDownItems.Add(
+    new ToolStripMenuItem("Copy Track", null, (sender, e) =>
+    {
+        if (trackManager.SelectedTrack is not null)
+        {
+            copiedTrack = trackManager.SelectedTrack.Duplicate();
+        }
+    })
+    {
+        ShortcutKeys = Keys.Control | Keys.C
+    });
+
+        menuEdit.DropDownItems.Add(
+            new ToolStripMenuItem("Paste Track", null, (sender, e) =>
+            {
+                if (copiedTrack is null)
+                {
+                    return;
+                }
+
+                Track newTrack = copiedTrack.Duplicate();
+                CreateTrackPanel(newTrack);
+                trackManager.AddTrack(newTrack);
+                UpdateSizes();
+            })
+            {
+                ShortcutKeys = Keys.Control | Keys.V
+            });
+        menuEdit.DropDownItems.Add("Fade In", null, (sender, e) =>
     {
         trackManager.SelectedTrack?.FadeIn();
     });

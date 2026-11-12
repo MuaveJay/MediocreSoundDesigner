@@ -107,7 +107,27 @@ public class Track : IDisposable {
     this.sampleRate = 0;
     IsDisabled = false;
   }
-  public void LinkPanels(Panel panDrawSamples, Panel panContainer) {
+
+    public Track Duplicate()
+    {
+        return new Track(CloneSamples())
+        {
+            file = this.file,
+            duration = this.duration,
+            offset = this.offset,
+            timeScale = this.timeScale,
+            Volume = this.Volume,
+            pitch = this.pitch,
+            bits = this.bits,
+            channels = this.channels,
+            sampleRate = this.sampleRate,
+            DrawOffset = this.DrawOffset,
+            drawTimescale = this.drawTimescale,
+            IsDisabled = this.IsDisabled
+        };
+    }
+
+    public void LinkPanels(Panel panDrawSamples, Panel panContainer) {
     this.PanDrawSamples = panDrawSamples;
     this.panContainer = panContainer;
   }
