@@ -8,8 +8,15 @@ public class TrackManager {
 
   public List<Track> Tracks { get; private set; }
 	public Track SelectedTrack { get; private set; }
-  public int DrawTimescale { get; set; }
-  public PlaybackState State => pseudoCombinedTrack?.State ?? PlaybackState.Stopped;
+    private int drawTimescale = 1;
+
+    public int DrawTimescale
+    {
+        get => drawTimescale;
+        set => drawTimescale = Math.Max(1, value);
+    }
+
+    public PlaybackState State => pseudoCombinedTrack?.State ?? PlaybackState.Stopped;
 
   public TrackManager(Panel panContainer) {
 		Tracks = new();
