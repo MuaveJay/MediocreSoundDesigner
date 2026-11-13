@@ -231,9 +231,34 @@ private void ApplyFade(bool fadeIn)
     PanDrawSamples?.Invalidate();
 }
 
-    public void Trim() {
-  }
-  public void AlterTimeScale(float scale) {
+
+    public double DurationSeconds =>
+      samples.Length / (double)((sampleRate > 0 ? sampleRate : 44100) * channels);
+
+    public bool Trim(double startTime, double endTime)
+    {
+        if (startTime < 0 || startTime >= endTime || endTime > DurationSeconds)
+        {
+            return false;
+        }
+
+        int rate = sampleRate > 0 ? sampleRate : 44100;
+        int start = (int)(startTime * rate) * channels;
+        int end = (int)(endTime * rate) * channels;
+
+        if (start >= end || (start == 0 && end == samples.Length))
+        {
+            return false;
+        }
+
+        SaveState();
+        samples = samples[start..end];
+        PanDrawSamples?.Invalidate();
+
+        return true;
+    }
+
+    public void AlterTimeScale(float scale) {
   }
   public void SetVolume(float newVolume) {
     Volume = newVolume;

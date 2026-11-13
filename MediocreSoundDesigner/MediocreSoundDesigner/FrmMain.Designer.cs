@@ -45,6 +45,7 @@
             menuEditEliminateSilence = new ToolStripMenuItem();
             menuEditUndo = new ToolStripMenuItem();
             menuEditRedo = new ToolStripMenuItem();
+            menuEditNormalize = new ToolStripMenuItem();
             menuGen = new ToolStripMenuItem();
             menuGenRecord = new ToolStripMenuItem();
             menuGenNoise = new ToolStripMenuItem();
@@ -54,7 +55,7 @@
             sfdSaveFile = new SaveFileDialog();
             trkDrawTimescale = new TrackBar();
             colorDialog = new ColorDialog();
-            menuEditNormalize = new ToolStripMenuItem();
+            menuEditTrim = new ToolStripMenuItem();
             panTracks.SuspendLayout();
             menu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkDrawTimescale).BeginInit();
@@ -137,7 +138,7 @@
             // 
             // menuEdit
             // 
-            menuEdit.DropDownItems.AddRange(new ToolStripItem[] { menuEditFlip, menuEditReverse, menuEditVolume, menuEditEliminateSilence, menuEditUndo, menuEditRedo, menuEditNormalize });
+            menuEdit.DropDownItems.AddRange(new ToolStripItem[] { menuEditFlip, menuEditReverse, menuEditVolume, menuEditEliminateSilence, menuEditUndo, menuEditRedo, menuEditNormalize, menuEditTrim });
             menuEdit.Name = "menuEdit";
             menuEdit.Size = new Size(66, 34);
             menuEdit.Text = "E&dit";
@@ -185,6 +186,13 @@
             menuEditRedo.Size = new Size(315, 40);
             menuEditRedo.Text = "Redo";
             menuEditRedo.Click += menuEditRedo_Click;
+            // 
+            // menuEditNormalize
+            // 
+            menuEditNormalize.Name = "menuEditNormalize";
+            menuEditNormalize.Size = new Size(315, 40);
+            menuEditNormalize.Text = "Normalize Audio";
+            menuEditNormalize.Click += menuEditNormalize_Click;
             // 
             // menuGen
             // 
@@ -254,12 +262,12 @@
             trkDrawTimescale.Value = 500;
             trkDrawTimescale.Scroll += trkDrawTimescale_Scroll;
             // 
-            // menuEditNormalize
+            // menuEditTrim
             // 
-            menuEditNormalize.Name = "menuEditNormalize";
-            menuEditNormalize.Size = new Size(315, 40);
-            menuEditNormalize.Text = "Normalize Audio";
-            menuEditNormalize.Click += menuEditNormalize_Click;
+            menuEditTrim.Name = "menuEditTrim";
+            menuEditTrim.Size = new Size(315, 40);
+            menuEditTrim.Text = "Trim Audio";
+            menuEditTrim.Click += menuEditTrim_Click;
             // 
             // FrmMain
             // 
@@ -314,5 +322,6 @@
         private ToolStripMenuItem menuEditUndo;
         private ToolStripMenuItem menuEditRedo;
         private ToolStripMenuItem menuEditNormalize;
+        private ToolStripMenuItem menuEditTrim;
     }
 }
