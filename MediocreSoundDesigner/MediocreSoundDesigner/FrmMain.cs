@@ -402,4 +402,32 @@ public partial class FrmMain : Form
         }
     }
 
+    private void menuEditSplit_Click(object sender, EventArgs e)
+    {
+        Track track = trackManager.SelectedTrack;
+
+        if (track is null)
+        {
+            return;
+        }
+
+        using FrmEditSplit frm = new();
+        frm.SetSound(track);
+
+        if (frm.ShowDialog() == DialogResult.OK)
+        {
+            Track secondTrack = track.Split(frm.SplitSeconds);
+
+            if (secondTrack is null)
+            {
+                MessageBox.Show("Unable to split at that time.");
+                return;
+            }
+
+            CreateTrackPanel(secondTrack);
+            trackManager.AddTrack(secondTrack);
+            UpdateSizes();
+        }
+    }
+
 }
