@@ -46,6 +46,7 @@
             menuEditUndo = new ToolStripMenuItem();
             menuEditRedo = new ToolStripMenuItem();
             menuEditNormalize = new ToolStripMenuItem();
+            menuEditTrim = new ToolStripMenuItem();
             menuGen = new ToolStripMenuItem();
             menuGenRecord = new ToolStripMenuItem();
             menuGenNoise = new ToolStripMenuItem();
@@ -55,7 +56,6 @@
             sfdSaveFile = new SaveFileDialog();
             trkDrawTimescale = new TrackBar();
             colorDialog = new ColorDialog();
-            menuEditTrim = new ToolStripMenuItem();
             panTracks.SuspendLayout();
             menu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkDrawTimescale).BeginInit();
@@ -67,6 +67,7 @@
             panTracks.BackColor = Color.DimGray;
             panTracks.BorderStyle = BorderStyle.Fixed3D;
             panTracks.Controls.Add(lblPlayhead);
+            panTracks.Controls.Add(btnPlay);
             panTracks.Location = new Point(17, 204);
             panTracks.Margin = new Padding(5, 6, 5, 6);
             panTracks.Name = "panTracks";
@@ -146,28 +147,28 @@
             // menuEditFlip
             // 
             menuEditFlip.Name = "menuEditFlip";
-            menuEditFlip.Size = new Size(315, 40);
+            menuEditFlip.Size = new Size(302, 40);
             menuEditFlip.Text = "Flip";
             menuEditFlip.Click += menuEditFlip_Click;
             // 
             // menuEditReverse
             // 
             menuEditReverse.Name = "menuEditReverse";
-            menuEditReverse.Size = new Size(315, 40);
+            menuEditReverse.Size = new Size(302, 40);
             menuEditReverse.Text = "Reverse";
             menuEditReverse.Click += menuEditReverse_Click;
             // 
             // menuEditVolume
             // 
             menuEditVolume.Name = "menuEditVolume";
-            menuEditVolume.Size = new Size(315, 40);
+            menuEditVolume.Size = new Size(302, 40);
             menuEditVolume.Text = "Alter Volume...";
             menuEditVolume.Click += menuEditVolume_Click;
             // 
             // menuEditEliminateSilence
             // 
             menuEditEliminateSilence.Name = "menuEditEliminateSilence";
-            menuEditEliminateSilence.Size = new Size(315, 40);
+            menuEditEliminateSilence.Size = new Size(302, 40);
             menuEditEliminateSilence.Text = "Eliminate Silence...";
             menuEditEliminateSilence.Click += menuEditEliminateSilence_Click;
             // 
@@ -175,7 +176,7 @@
             // 
             menuEditUndo.Name = "menuEditUndo";
             menuEditUndo.ShortcutKeys = Keys.Control | Keys.Z;
-            menuEditUndo.Size = new Size(315, 40);
+            menuEditUndo.Size = new Size(302, 40);
             menuEditUndo.Text = "Undo";
             menuEditUndo.Click += menuEditUndo_Click;
             // 
@@ -183,16 +184,23 @@
             // 
             menuEditRedo.Name = "menuEditRedo";
             menuEditRedo.ShortcutKeys = Keys.Control | Keys.Y;
-            menuEditRedo.Size = new Size(315, 40);
+            menuEditRedo.Size = new Size(302, 40);
             menuEditRedo.Text = "Redo";
             menuEditRedo.Click += menuEditRedo_Click;
             // 
             // menuEditNormalize
             // 
             menuEditNormalize.Name = "menuEditNormalize";
-            menuEditNormalize.Size = new Size(315, 40);
+            menuEditNormalize.Size = new Size(302, 40);
             menuEditNormalize.Text = "Normalize Audio";
             menuEditNormalize.Click += menuEditNormalize_Click;
+            // 
+            // menuEditTrim
+            // 
+            menuEditTrim.Name = "menuEditTrim";
+            menuEditTrim.Size = new Size(302, 40);
+            menuEditTrim.Text = "Trim Audio";
+            menuEditTrim.Click += menuEditTrim_Click;
             // 
             // menuGen
             // 
@@ -233,7 +241,7 @@
             btnPlay.FlatAppearance.MouseOverBackColor = Color.Transparent;
             btnPlay.FlatStyle = FlatStyle.Flat;
             btnPlay.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnPlay.Location = new Point(1229, 1322);
+            btnPlay.Location = new Point(838, 614);
             btnPlay.Margin = new Padding(5, 6, 5, 6);
             btnPlay.Name = "btnPlay";
             btnPlay.Size = new Size(171, 200);
@@ -262,13 +270,6 @@
             trkDrawTimescale.Value = 500;
             trkDrawTimescale.Scroll += trkDrawTimescale_Scroll;
             // 
-            // menuEditTrim
-            // 
-            menuEditTrim.Name = "menuEditTrim";
-            menuEditTrim.Size = new Size(315, 40);
-            menuEditTrim.Text = "Trim Audio";
-            menuEditTrim.Click += menuEditTrim_Click;
-            // 
             // FrmMain
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
@@ -276,10 +277,10 @@
             BackColor = Color.Black;
             ClientSize = new Size(1924, 1044);
             Controls.Add(trkDrawTimescale);
-            Controls.Add(btnPlay);
             Controls.Add(lblDebug);
             Controls.Add(panTracks);
             Controls.Add(menu);
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
             KeyPreview = true;
             MainMenuStrip = menu;
             Margin = new Padding(5, 6, 5, 6);
@@ -287,6 +288,7 @@
             Text = "Mediocre Sound Designer";
             SizeChanged += FrmMain_SizeChanged;
             panTracks.ResumeLayout(false);
+            panTracks.PerformLayout();
             menu.ResumeLayout(false);
             menu.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)trkDrawTimescale).EndInit();

@@ -20,6 +20,8 @@ public partial class FrmMain : Form
     {
         DoubleBuffered = true;
         trackManager = new(panTracks);
+        btnPlay.Parent = this;
+        MinimumSize = new Size(650, 500);
         menuEdit.DropDownItems.Add(
     new ToolStripMenuItem("Copy Track", null, (sender, e) =>
     {
@@ -319,29 +321,59 @@ public partial class FrmMain : Form
         return pan;
     }
 
+
     private void UpdateSizes()
     {
         const int PADDING = 15;
 
-        panTracks.Left = PADDING;
-        panTracks.Width = ClientSize.Width - (PADDING * 2);
+        int width = Math.Max(100, ClientSize.Width - PADDING * 2);
 
+        // Zoom slider
+        trkDrawTimescale.Left = PADDING;
+        trkDrawTimescale.Top = menu.Bottom + PADDING;
+        trkDrawTimescale.Width = width;
+
+
+        // Track area
+        panTracks.Left = PADDING;
+        panTracks.Top = trkDrawTimescale.Bottom + PADDING;
+        panTracks.Width = width;
+        panTracks.Height = Math.Max(100,
+            btnPlay.Top - panTracks.Top - PADDING);
+
+
+        // Play button
+        btnPlay.AutoSize = false;
+        btnPlay.Size = new Size(75, 75);
+        btnPlay.BackgroundImageLayout = ImageLayout.Zoom;
+        btnPlay.Left = PADDING;
+        btnPlay.Top = ClientSize.Height - btnPlay.Height - PADDING;
+
+
+
+        // Individual tracks
         int top = 0;
+        int count = trackManager.Tracks.Count;
+
         foreach (Track track in trackManager.Tracks)
         {
             track.PanDrawSamples.Left = 0;
-            track.PanDrawSamples.Width = panTracks.Width;
-            track.PanDrawSamples.Height = (panTracks.Height / trackManager.Tracks.Count) - 1;
+            track.PanDrawSamples.Width = panTracks.ClientSize.Width;
+            track.PanDrawSamples.Height = Math.Max(80,
+                panTracks.ClientSize.Height / count - 1);
             track.PanDrawSamples.Top = top;
+
             track.PanDrawSamples.Invalidate();
             top += track.PanDrawSamples.Height;
         }
-        trkDrawTimescale.Width = panTracks.Width;
-        trkDrawTimescale.Left = PADDING;
-        lblPlayhead.Left = 0;
-        lblPlayhead.Height = panTracks.Height;
+
+        // Playhead
+        lblPlayhead.Height = panTracks.ClientSize.Height;
         lblPlayhead.BringToFront();
+
+        btnPlay.BringToFront();
     }
+
 
     private void trimToolStripMenuItem_Click(object sender, EventArgs e)
     {
