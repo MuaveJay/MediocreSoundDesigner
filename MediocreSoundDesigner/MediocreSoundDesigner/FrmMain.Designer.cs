@@ -31,6 +31,7 @@
             components = new System.ComponentModel.Container();
             panTracks = new Panel();
             lblPlayhead = new Label();
+            btnPlay = new Button();
             lblDebug = new Label();
             ofdLoadFile = new OpenFileDialog();
             menu = new MenuStrip();
@@ -51,11 +52,11 @@
             menuGenRecord = new ToolStripMenuItem();
             menuGenNoise = new ToolStripMenuItem();
             menuGenGradientNoise = new ToolStripMenuItem();
-            btnPlay = new Button();
             tmrUpdate = new System.Windows.Forms.Timer(components);
             sfdSaveFile = new SaveFileDialog();
             trkDrawTimescale = new TrackBar();
             colorDialog = new ColorDialog();
+            menuEditSplit = new ToolStripMenuItem();
             panTracks.SuspendLayout();
             menu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkDrawTimescale).BeginInit();
@@ -82,6 +83,25 @@
             lblPlayhead.Name = "lblPlayhead";
             lblPlayhead.Size = new Size(9, 770);
             lblPlayhead.TabIndex = 9;
+            // 
+            // btnPlay
+            // 
+            btnPlay.AutoSize = true;
+            btnPlay.BackColor = Color.Transparent;
+            btnPlay.BackgroundImage = Properties.Resources.play;
+            btnPlay.BackgroundImageLayout = ImageLayout.Stretch;
+            btnPlay.FlatAppearance.BorderSize = 0;
+            btnPlay.FlatAppearance.MouseDownBackColor = Color.Transparent;
+            btnPlay.FlatAppearance.MouseOverBackColor = Color.Transparent;
+            btnPlay.FlatStyle = FlatStyle.Flat;
+            btnPlay.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnPlay.Location = new Point(838, 614);
+            btnPlay.Margin = new Padding(5, 6, 5, 6);
+            btnPlay.Name = "btnPlay";
+            btnPlay.Size = new Size(171, 200);
+            btnPlay.TabIndex = 6;
+            btnPlay.UseVisualStyleBackColor = false;
+            btnPlay.Click += btnPlay_Click;
             // 
             // lblDebug
             // 
@@ -139,7 +159,7 @@
             // 
             // menuEdit
             // 
-            menuEdit.DropDownItems.AddRange(new ToolStripItem[] { menuEditFlip, menuEditReverse, menuEditVolume, menuEditEliminateSilence, menuEditUndo, menuEditRedo, menuEditNormalize, menuEditTrim });
+            menuEdit.DropDownItems.AddRange(new ToolStripItem[] { menuEditFlip, menuEditReverse, menuEditVolume, menuEditEliminateSilence, menuEditUndo, menuEditRedo, menuEditNormalize, menuEditTrim, menuEditSplit });
             menuEdit.Name = "menuEdit";
             menuEdit.Size = new Size(66, 34);
             menuEdit.Text = "E&dit";
@@ -147,28 +167,28 @@
             // menuEditFlip
             // 
             menuEditFlip.Name = "menuEditFlip";
-            menuEditFlip.Size = new Size(302, 40);
+            menuEditFlip.Size = new Size(315, 40);
             menuEditFlip.Text = "Flip";
             menuEditFlip.Click += menuEditFlip_Click;
             // 
             // menuEditReverse
             // 
             menuEditReverse.Name = "menuEditReverse";
-            menuEditReverse.Size = new Size(302, 40);
+            menuEditReverse.Size = new Size(315, 40);
             menuEditReverse.Text = "Reverse";
             menuEditReverse.Click += menuEditReverse_Click;
             // 
             // menuEditVolume
             // 
             menuEditVolume.Name = "menuEditVolume";
-            menuEditVolume.Size = new Size(302, 40);
+            menuEditVolume.Size = new Size(315, 40);
             menuEditVolume.Text = "Alter Volume...";
             menuEditVolume.Click += menuEditVolume_Click;
             // 
             // menuEditEliminateSilence
             // 
             menuEditEliminateSilence.Name = "menuEditEliminateSilence";
-            menuEditEliminateSilence.Size = new Size(302, 40);
+            menuEditEliminateSilence.Size = new Size(315, 40);
             menuEditEliminateSilence.Text = "Eliminate Silence...";
             menuEditEliminateSilence.Click += menuEditEliminateSilence_Click;
             // 
@@ -176,7 +196,7 @@
             // 
             menuEditUndo.Name = "menuEditUndo";
             menuEditUndo.ShortcutKeys = Keys.Control | Keys.Z;
-            menuEditUndo.Size = new Size(302, 40);
+            menuEditUndo.Size = new Size(315, 40);
             menuEditUndo.Text = "Undo";
             menuEditUndo.Click += menuEditUndo_Click;
             // 
@@ -184,21 +204,21 @@
             // 
             menuEditRedo.Name = "menuEditRedo";
             menuEditRedo.ShortcutKeys = Keys.Control | Keys.Y;
-            menuEditRedo.Size = new Size(302, 40);
+            menuEditRedo.Size = new Size(315, 40);
             menuEditRedo.Text = "Redo";
             menuEditRedo.Click += menuEditRedo_Click;
             // 
             // menuEditNormalize
             // 
             menuEditNormalize.Name = "menuEditNormalize";
-            menuEditNormalize.Size = new Size(302, 40);
+            menuEditNormalize.Size = new Size(315, 40);
             menuEditNormalize.Text = "Normalize Audio";
             menuEditNormalize.Click += menuEditNormalize_Click;
             // 
             // menuEditTrim
             // 
             menuEditTrim.Name = "menuEditTrim";
-            menuEditTrim.Size = new Size(302, 40);
+            menuEditTrim.Size = new Size(315, 40);
             menuEditTrim.Text = "Trim Audio";
             menuEditTrim.Click += menuEditTrim_Click;
             // 
@@ -230,25 +250,6 @@
             menuGenGradientNoise.Text = "Gradient Noise";
             menuGenGradientNoise.Click += menuGenGradientNoise_Click;
             // 
-            // btnPlay
-            // 
-            btnPlay.AutoSize = true;
-            btnPlay.BackColor = Color.Transparent;
-            btnPlay.BackgroundImage = Properties.Resources.play;
-            btnPlay.BackgroundImageLayout = ImageLayout.Stretch;
-            btnPlay.FlatAppearance.BorderSize = 0;
-            btnPlay.FlatAppearance.MouseDownBackColor = Color.Transparent;
-            btnPlay.FlatAppearance.MouseOverBackColor = Color.Transparent;
-            btnPlay.FlatStyle = FlatStyle.Flat;
-            btnPlay.Font = new Font("Segoe UI", 15.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnPlay.Location = new Point(838, 614);
-            btnPlay.Margin = new Padding(5, 6, 5, 6);
-            btnPlay.Name = "btnPlay";
-            btnPlay.Size = new Size(171, 200);
-            btnPlay.TabIndex = 6;
-            btnPlay.UseVisualStyleBackColor = false;
-            btnPlay.Click += btnPlay_Click;
-            // 
             // tmrUpdate
             // 
             tmrUpdate.Enabled = true;
@@ -269,6 +270,13 @@
             trkDrawTimescale.TickFrequency = 10;
             trkDrawTimescale.Value = 500;
             trkDrawTimescale.Scroll += trkDrawTimescale_Scroll;
+            // 
+            // menuEditSplit
+            // 
+            menuEditSplit.Name = "menuEditSplit";
+            menuEditSplit.Size = new Size(315, 40);
+            menuEditSplit.Text = "Split Audio";
+            menuEditSplit.Click += menuEditSplit_Click;
             // 
             // FrmMain
             // 
@@ -325,5 +333,6 @@
         private ToolStripMenuItem menuEditRedo;
         private ToolStripMenuItem menuEditNormalize;
         private ToolStripMenuItem menuEditTrim;
+        private ToolStripMenuItem menuEditSplit;
     }
 }

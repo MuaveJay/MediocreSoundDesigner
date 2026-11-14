@@ -258,6 +258,40 @@ private void ApplyFade(bool fadeIn)
         return true;
     }
 
+    public Track Split(double splitTime)
+    {
+        int rate = sampleRate > 0 ? sampleRate : 44100;
+        int channelCount = Math.Max(1, channels);
+        int splitIndex = (int)(splitTime * rate) * channelCount;
+
+        if (splitTime <= 0 || splitTime >= DurationSeconds ||
+            splitIndex <= 0 || splitIndex >= samples.Length)
+        {
+            return null;
+        }
+
+
+
+        Track secondTrack = Duplicate();
+
+        float[] secondSamples = new float[samples.Length];
+        Array.Copy(samples, splitIndex, secondSamples,
+            splitIndex, samples.Length - splitIndex);
+
+        secondTrack.ReplaceSamples(secondSamples);
+
+
+        undoHistory.Clear();
+        redoHistory.Clear();
+
+        ReplaceSamples(samples[..splitIndex]);
+
+
+        PanDrawSamples?.Invalidate();
+
+        return secondTrack;
+    }
+
     public void AlterTimeScale(float scale) {
   }
   public void SetVolume(float newVolume) {
