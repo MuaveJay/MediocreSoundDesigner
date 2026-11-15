@@ -48,3 +48,13 @@ Timeline checks include pointer events on hidden forms, ruler tick/sample mappin
 selection and scroll alignment, drag release/capture cancellation, and allocation
 bounds for repeated seeks. Any offscreen bitmap used to exercise custom painting
 is created from generated test data and is never a screen capture.
+
+
+Edit > Split at Playhead (Ctrl+K) cuts the selected track at the shared project's
+exact sample frame and creates a second track at that absolute position. It is
+disabled at either edge or outside that track. The whole split is one Undo step.
+Edit > Split at Time... (Ctrl+Shift+K) retains optional numeric entry, measured in
+seconds from the selected track's own start, initialized from the current cursor
+when it is inside the track. Numeric entry rounds once to the common frame grid.
+Tests verify sample-exact boundaries, moved/repeated splits, channel/settings
+preservation, Undo/Redo, playback states, optional numeric entry, and UI alignment.

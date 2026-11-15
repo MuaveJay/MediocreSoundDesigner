@@ -251,16 +251,19 @@ public partial class Track : IDisposable
             return HistoryOwner.SplitTrack(this, splitTime);
         if (!double.IsFinite(splitTime) || splitTime <= 0 || splitTime >= DurationSeconds)
             return null;
-        int splitIndex = (int)Math.Round(splitTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
-        if (splitIndex <= 0 || splitIndex >= samples.Length)
-            return null;
+        return SplitAtFrame((long)Math.Round(splitTime * sampleRate, MidpointRounding.AwayFromZero));
+    }
 
+    internal Track SplitAtFrame(long localFrame)
+    {
+        if (localFrame <= 0 || localFrame >= TimelineFrameCount)
+            return null;
+        if (NeedsProjectEdit)
+            return HistoryOwner.SplitTrackAtFrame(this, checked(startFrame + localFrame));
+        int splitIndex = checked((int)(localFrame * channels));
         Track second = Duplicate();
         second.ReplaceSamples(samples[splitIndex..]);
-        second.MoveToFrame(checked(startFrame + (long)Math.Round(
-            splitIndex / (double)channels / sampleRate * AudioData.SampleRate,
-            MidpointRounding.AwayFromZero)));
-
+        second.MoveToFrame(checked(startFrame + localFrame));
         SaveState();
         samples = samples[..splitIndex];
         Changed();

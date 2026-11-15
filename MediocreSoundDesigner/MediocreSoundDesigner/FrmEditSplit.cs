@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,12 +16,22 @@ public partial class FrmEditSplit : Form
     public FrmEditSplit()
     {
         InitializeComponent();
+        Text = "Split at Time";
+        lblSplit.Text = "Track time (seconds):";
+        nudSplit.DecimalPlaces = 6;
+        nudSplit.Increment = 0.001m;
+        AcceptButton = btnSplit;
+        CancelButton = btnCancel;
+        StartPosition = FormStartPosition.CenterParent;
     }
 
-    public void SetSound(Track track)
+    public void SetSound(Track track, double? initialSeconds = null)
     {
         nudSplit.Maximum = (decimal)track.DurationSeconds;
-        nudSplit.Value = (decimal)(track.DurationSeconds / 2);
+        double seconds = initialSeconds is double candidate && double.IsFinite(candidate) &&
+                         candidate > 0 && candidate < track.DurationSeconds
+            ? candidate : track.DurationSeconds / 2;
+        nudSplit.Value = (decimal)seconds;
     }
 
     public double SplitSeconds => (double)nudSplit.Value;
