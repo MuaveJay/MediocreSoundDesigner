@@ -95,14 +95,16 @@ public partial class FrmMain
         UpdateTimelineView();
         UpdateSplitControls();
         UpdateTrimControls();
+        UpdateSelectedVolumeControls();
     }
 
     private void LayoutTransportControls()
     {
         btnStop.SetBounds(btnPlay.Right + 12, btnPlay.Top, 70, btnPlay.Height);
         lblPlaybackTime.Location = new Point(btnStop.Right + 12, btnPlay.Top);
+        LayoutSelectedVolume();
         trkPlaybackPosition.SetBounds(btnStop.Right + 8, lblPlaybackTime.Bottom + 4,
-            Math.Max(100, ClientSize.Width - btnStop.Right - 23), 40);
+            Math.Max(100, trkSelectedVolume.Left - btnStop.Right - 20), 40);
         btnStop.BringToFront();
         trkPlaybackPosition.BringToFront();
         lblPlaybackTime.BringToFront();

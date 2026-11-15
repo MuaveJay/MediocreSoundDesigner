@@ -79,6 +79,7 @@ public partial class FrmMain : Form
         SetupSplitControls();
         SetupTrimControls();
         SetupTrackSelection();
+        SetupSelectedVolume();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -95,6 +96,8 @@ public partial class FrmMain : Form
         timelineRuler.BackColor = Settings.Color.WinBg;
         timelineRuler.ForeColor = Settings.Color.WinFg;
         lblSelectionRange.ForeColor = Settings.Color.WinFg;
+        lblSelectedVolume.ForeColor = Settings.Color.WinFg;
+        trkSelectedVolume.BackColor = Settings.Color.WinBg;
         timelineRuler.Invalidate();
         trackManager.ApplySettings();
     }
@@ -102,6 +105,16 @@ public partial class FrmMain : Form
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (volumeGesture && keyData == Keys.Escape)
+        {
+            CancelVolumeGesture();
+            return true;
+        }
+        bool sliderNavigation = keyData is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.PageUp or Keys.PageDown or Keys.Home or Keys.End;
+        if (sliderNavigation && (trkSelectedVolume.Focused || trkPlaybackPosition.Focused || trkDrawTimescale.Focused))
+            return base.ProcessCmdKey(ref msg, keyData);
+        if (volumeGesture)
+            FinishVolumeGesture();
         if (keyData == Keys.Escape)
         {
             EndRangeDrag();
@@ -145,6 +158,7 @@ public partial class FrmMain : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        FinishVolumeGesture();
         EndRangeDrag();
         EndTimelineDrag();
         trackManager?.Dispose();
@@ -206,12 +220,16 @@ public partial class FrmMain : Form
 
     private void menuEditUndo_Click(object sender, EventArgs e)
     {
+        FinishVolumeGesture();
         trackManager.Undo();
+        RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
     }
 
     private void menuEditRedo_Click(object sender, EventArgs e)
     {
+        FinishVolumeGesture();
         trackManager.Redo();
+        RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
     }
 
 
@@ -236,10 +254,11 @@ public partial class FrmMain : Form
     {
         if (trackManager.SelectedTrack is not null)
         {
-            FrmEditVolume frm = new();
+            using FrmEditVolume frm = new();
             frm.SetSound(trackManager.SelectedTrack);
             frm.EditExecutor = action => { trackManager.ExecuteEdit(action); };
-            frm.ShowDialog();
+            frm.ShowDialog(this);
+            RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
         }
     }
     private void menuEditEliminateSilence_Click(object sender, EventArgs e)
