@@ -11,7 +11,7 @@ public enum SampleRegion
     ANYWHERE,
 }
 
-public class Track : IDisposable
+public partial class Track : IDisposable
 {
     private float[] samples;
     private readonly int sampleRate = AudioData.SampleRate;
@@ -79,12 +79,16 @@ public class Track : IDisposable
 
     private void SaveState()
     {
+        if (HistoryOwner is not null)
+            return;
         undoHistory.Push((CloneSamples(), Volume, startFrame));
         redoHistory.Clear();
     }
 
     public bool Undo()
     {
+        if (HistoryOwner is not null)
+            return HistoryOwner.Undo();
         if (undoHistory.Count == 0)
             return false;
         redoHistory.Push((CloneSamples(), Volume, startFrame));
@@ -96,6 +100,8 @@ public class Track : IDisposable
 
     public bool Redo()
     {
+        if (HistoryOwner is not null)
+            return HistoryOwner.Redo();
         if (redoHistory.Count == 0)
             return false;
         undoHistory.Push((CloneSamples(), Volume, startFrame));
@@ -109,6 +115,11 @@ public class Track : IDisposable
 
     public void ReplaceSamples(float[] replacement)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => ReplaceSamples(replacement));
+            return;
+        }
         AudioData.Validate(replacement, sampleRate, channels);
         samples = (float[])replacement.Clone();
         Changed();
@@ -116,6 +127,11 @@ public class Track : IDisposable
 
     public void MoveToFrame(long frame)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => MoveToFrame(frame));
+            return;
+        }
         if (frame < 0)
             throw new ArgumentOutOfRangeException(nameof(frame));
         if (startFrame == frame)
@@ -131,6 +147,11 @@ public class Track : IDisposable
 
     public void Normalize()
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => Normalize());
+            return;
+        }
         if (samples.Length == 0 || Volume == 0)
             return;
         float peak = 0;
@@ -147,6 +168,11 @@ public class Track : IDisposable
 
     public void Reverse()
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => Reverse());
+            return;
+        }
         SaveState();
         int frames = samples.Length / channels;
         for (int frame = 0; frame < frames / 2; frame++)
@@ -163,6 +189,11 @@ public class Track : IDisposable
 
     public void Flip()
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => Flip());
+            return;
+        }
         SaveState();
         for (int i = 0; i < samples.Length; i++)
             samples[i] *= -1;
@@ -174,6 +205,11 @@ public class Track : IDisposable
 
     private void ApplyFade(bool fadeIn)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => ApplyFade(fadeIn));
+            return;
+        }
         int frameCount = samples.Length / channels;
         if (frameCount < 2)
             return;
@@ -190,6 +226,8 @@ public class Track : IDisposable
 
     public bool Trim(double startTime, double endTime)
     {
+        if (NeedsProjectEdit)
+            return HistoryOwner.ExecuteEdit(() => Trim(startTime, endTime));
         if (!double.IsFinite(startTime) || !double.IsFinite(endTime) ||
             startTime < 0 || startTime >= endTime || endTime > DurationSeconds)
             return false;
@@ -207,6 +245,8 @@ public class Track : IDisposable
 
     public Track Split(double splitTime)
     {
+        if (NeedsProjectEdit)
+            return HistoryOwner.SplitTrack(this, splitTime);
         if (!double.IsFinite(splitTime) || splitTime <= 0 || splitTime >= DurationSeconds)
             return null;
         int splitIndex = (int)Math.Round(splitTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
@@ -219,9 +259,7 @@ public class Track : IDisposable
             splitIndex / (double)channels / sampleRate * AudioData.SampleRate,
             MidpointRounding.AwayFromZero)));
 
-        // Complete structural Undo/Redo is tracked separately in issue #20.
-        undoHistory.Clear();
-        redoHistory.Clear();
+        SaveState();
         samples = samples[..splitIndex];
         Changed();
         return second;
@@ -231,6 +269,11 @@ public class Track : IDisposable
 
     public void SetVolume(float newVolume)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => SetVolume(newVolume));
+            return;
+        }
         if (Volume == newVolume)
             return;
         Volume = newVolume;
@@ -239,6 +282,11 @@ public class Track : IDisposable
 
     public void ChangeVolume(float newVolume)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => ChangeVolume(newVolume));
+            return;
+        }
         if (Volume == newVolume)
             return;
         SaveState();
@@ -247,6 +295,11 @@ public class Track : IDisposable
 
     public void EliminateSilence(SampleRegion region, float minDuration, float threshold)
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => EliminateSilence(region, minDuration, threshold));
+            return;
+        }
         if (!float.IsFinite(minDuration) || !float.IsFinite(threshold) || minDuration < 0 || threshold < 0)
             return;
         int frames = samples.Length / channels;
@@ -374,6 +427,11 @@ public class Track : IDisposable
 
     public void ToggleDisabled()
     {
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => ToggleDisabled());
+            return;
+        }
         IsDisabled = !IsDisabled;
         Changed();
     }

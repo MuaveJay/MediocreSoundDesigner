@@ -2,14 +2,15 @@ using NAudio.Wave;
 
 namespace MediocreSoundDesigner;
 
-public class TrackManager : IDisposable
+public partial class TrackManager : IDisposable
 {
     private Track pseudoCombinedTrack;
     private readonly Func<IWavePlayer> playbackFactory;
     private (Track Track, long Revision)[] mixedTracks = Array.Empty<(Track, long)>();
     private int drawTimescale = 1;
 
-    public List<Track> Tracks { get; } = new();
+    private readonly List<Track> tracks = new();
+    public IReadOnlyList<Track> Tracks => tracks;
     public Track SelectedTrack { get; private set; }
     public int DrawTimescale
     {
@@ -24,13 +25,25 @@ public class TrackManager : IDisposable
         this.playbackFactory = playbackFactory;
     }
 
-    public void AddTrack(Track track) => Tracks.Add(track);
+    public void AddTrack(Track track)
+    {
+        ExecuteEdit(() =>
+        {
+            if (tracks.Contains(track))
+                throw new ArgumentException("The track is already in this project.", nameof(track));
+            OwnTrack(track);
+            tracks.Add(track);
+        });
+    }
 
     public void RemTrack(Track track)
     {
-        Tracks.Remove(track);
-        if (SelectedTrack == track)
-            SelectTrack(Tracks.FirstOrDefault());
+        ExecuteEdit(() =>
+        {
+            tracks.Remove(track);
+            if (SelectedTrack == track)
+                SelectTrack(Tracks.FirstOrDefault());
+        });
     }
 
     public void SelectTrack(Track track)
@@ -112,7 +125,6 @@ public class TrackManager : IDisposable
     public void Dispose()
     {
         pseudoCombinedTrack?.Dispose();
-        foreach (Track track in Tracks)
-            track.Dispose();
+        DisposeProjectTracks();
     }
 }
