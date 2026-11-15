@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.37806.7 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediocreSoundDesigner", "MediocreSoundDesigner\MediocreSoundDesigner.csproj", "{DDD7A49D-CF50-4560-9F8E-946DD3394548}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediocreSoundDesigner.Tests", "MediocreSoundDesigner.Tests\MediocreSoundDesigner.Tests.csproj", "{250808E9-54DA-4E33-9474-FAE9166D04CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{DDD7A49D-CF50-4560-9F8E-946DD3394548}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDD7A49D-CF50-4560-9F8E-946DD3394548}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDD7A49D-CF50-4560-9F8E-946DD3394548}.Release|Any CPU.Build.0 = Release|Any CPU
+		{250808E9-54DA-4E33-9474-FAE9166D04CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{250808E9-54DA-4E33-9474-FAE9166D04CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{250808E9-54DA-4E33-9474-FAE9166D04CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{250808E9-54DA-4E33-9474-FAE9166D04CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

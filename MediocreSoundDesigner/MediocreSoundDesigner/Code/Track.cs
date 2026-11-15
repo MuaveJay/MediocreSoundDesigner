@@ -1,375 +1,321 @@
-﻿using NAudio.Wave;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace MediocreSoundDesigner;
 
-public enum SampleRegion {
-  BEGINNING_ONLY,
-  END_ONLY,
-  BEGINNING_AND_END,
-  ANYWHERE,
+public enum SampleRegion
+{
+    BEGINNING_ONLY,
+    END_ONLY,
+    BEGINNING_AND_END,
+    ANYWHERE,
 }
 
-public class Track : IDisposable {
-  // Fields
-  private string file;
-  private TimeSpan duration;
-  private float offset;
-  private float timeScale;
-  private int sampleRate;
-  private float[] samples;
-  private float pitch;
-  private int bits;
-  private int channels;
-  private AudioFileReader fileReader;
-  private WaveOut outputDevice;
-  private Panel panContainer;
-  private int drawTimescale;
+public class Track : IDisposable
+{
+    private float[] samples;
+    private readonly int sampleRate = AudioData.SampleRate;
+    private readonly int channels = AudioData.Channels;
+    private readonly Func<IWavePlayer> playbackFactory;
+    private IWavePlayer outputDevice;
+    private long playbackStartFrame;
+    private long playbackLengthFrames;
+    private long startFrame;
 
-  private readonly Stack<(float[] Samples, float Volume)> undoHistory = new();
-  private readonly Stack<(float[] Samples, float Volume)> redoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame)> undoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame)> redoHistory = new();
+
+    public bool IsDisabled { get; private set; }
+    public Panel PanDrawSamples { get; private set; }
+    public float Volume { get; private set; } = 1.0f;
+    public int SampleRate => sampleRate;
+    public int Channels => channels;
+    public long Revision { get; private set; }
+    public long StartFrame => startFrame;
+    public double StartSeconds => startFrame / (double)AudioData.SampleRate;
+    public double DurationSeconds => samples.Length / (double)(sampleRate * channels);
+    public long TimelineFrameCount => samples.Length == 0 ? 0 : Math.Max(1, (long)Math.Round(
+        DurationSeconds * AudioData.SampleRate, MidpointRounding.AwayFromZero));
+    public long EndFrame => checked(startFrame + TimelineFrameCount);
+    public PlaybackState State => outputDevice?.PlaybackState ?? PlaybackState.Stopped;
+
+    public Track(string file)
+    {
+        using AudioFileReader reader = new(file);
+        AudioData.Validate(Array.Empty<float>(), reader.WaveFormat.SampleRate, reader.WaveFormat.Channels);
+        samples = AudioData.ToMixFormat(AudioData.ReadAll(reader),
+            reader.WaveFormat.SampleRate, reader.WaveFormat.Channels);
+        playbackFactory = () => new WaveOut();
+    }
+
+    public Track(float[] samples, int sampleRate = AudioData.SampleRate, int channels = 1,
+                 Func<IWavePlayer> playbackFactory = null)
+    {
+        // Convert once so every edit uses the same frame grid as the output mixer.
+        this.samples = AudioData.ToMixFormat(samples, sampleRate, channels);
+        this.playbackFactory = playbackFactory ?? (() => new WaveOut());
+    }
+
+    public Track Duplicate()
+    {
+        return new Track(samples, sampleRate, channels, playbackFactory)
+        {
+            Volume = this.Volume,
+            startFrame = this.startFrame,
+            IsDisabled = this.IsDisabled
+        };
+    }
+
+    public void LinkPanels(Panel panDrawSamples, Panel panContainer)
+    {
+        PanDrawSamples = panDrawSamples;
+    }
+
+    private void Changed()
+    {
+        Revision++;
+        PanDrawSamples?.Invalidate();
+    }
 
     private void SaveState()
     {
-        undoHistory.Push((CloneSamples(), Volume));
+        undoHistory.Push((CloneSamples(), Volume, startFrame));
         redoHistory.Clear();
     }
 
     public bool Undo()
     {
         if (undoHistory.Count == 0)
-        {
             return false;
-        }
-        redoHistory.Push((CloneSamples(), Volume));
-        var previousState = undoHistory.Pop();
-        ReplaceSamples(previousState.Samples);
-        SetVolume(previousState.Volume);
-        PanDrawSamples?.Invalidate();
+        redoHistory.Push((CloneSamples(), Volume, startFrame));
+        var previous = undoHistory.Pop();
+        (samples, Volume, startFrame) = previous;
+        Changed();
         return true;
     }
-
 
     public bool Redo()
     {
         if (redoHistory.Count == 0)
-        {
             return false;
-        }
-        undoHistory.Push((CloneSamples(), Volume));
-        var nextState = redoHistory.Pop();
-        ReplaceSamples(nextState.Samples);
-        SetVolume(nextState.Volume);
-        PanDrawSamples?.Invalidate();
+        undoHistory.Push((CloneSamples(), Volume, startFrame));
+        var next = redoHistory.Pop();
+        (samples, Volume, startFrame) = next;
+        Changed();
         return true;
     }
 
+    public float[] CloneSamples() => (float[])samples.Clone();
 
-    // properties
-    public int DrawOffset { get; set; }
-  public bool IsDisabled { get; private set; }
-  public Panel PanDrawSamples { get; private set; }
-  public float Volume { get; private set; }
-  private string tempFilePath => Path.Combine(Path.GetTempPath(), "MediocreSoundDesigner", "temp.wav");
-  public PlaybackState State => outputDevice?.PlaybackState ?? PlaybackState.Stopped;
-
-  // ctor
-  public Track(string file) {
-    fileReader = new AudioFileReader(file);
-    int sampleCount = (int)(fileReader.Length / 4);
-    this.samples = new float[sampleCount];
-    int samplesRead = ((ISampleProvider)fileReader).Read(samples);
-    if (samplesRead < sampleCount) {
-      Array.Resize(ref samples, samplesRead);
-    }
-
-    this.file = file;
-    this.duration = fileReader.TotalTime;
-    this.offset = 0;
-    this.timeScale = 1.0f;
-    this.Volume = 1.0f;
-    this.pitch = 1.0f;
-    this.bits = fileReader.WaveFormat.BitsPerSample;
-    this.channels = fileReader.WaveFormat.Channels;
-    this.sampleRate = fileReader.WaveFormat.SampleRate;
-    IsDisabled = false;
-  }
-  public Track(float[] samples) {
-    this.samples = samples;
-
-    this.file = "";
-    this.duration = TimeSpan.Zero;
-    this.offset = 0;
-    this.timeScale = 1.0f;
-    this.Volume = 1.0f;
-    this.pitch = 1.0f;
-    this.bits = 32;
-    this.channels = 1;
-    this.sampleRate = 0;
-    IsDisabled = false;
-  }
-
-    public Track Duplicate()
+    public void ReplaceSamples(float[] replacement)
     {
-        return new Track(CloneSamples())
-        {
-            file = this.file,
-            duration = this.duration,
-            offset = this.offset,
-            timeScale = this.timeScale,
-            Volume = this.Volume,
-            pitch = this.pitch,
-            bits = this.bits,
-            channels = this.channels,
-            sampleRate = this.sampleRate,
-            DrawOffset = this.DrawOffset,
-            drawTimescale = this.drawTimescale,
-            IsDisabled = this.IsDisabled
-        };
+        AudioData.Validate(replacement, sampleRate, channels);
+        samples = (float[])replacement.Clone();
+        Changed();
     }
 
-    public void LinkPanels(Panel panDrawSamples, Panel panContainer) {
-    this.PanDrawSamples = panDrawSamples;
-    this.panContainer = panContainer;
-  }
+    public void MoveToFrame(long frame)
+    {
+        if (frame < 0)
+            throw new ArgumentOutOfRangeException(nameof(frame));
+        if (startFrame == frame)
+            return;
+        startFrame = frame;
+        Changed();
+    }
 
-  // edits
-  public float[] CloneSamples() {
-    return (float[])samples.Clone();
-  }
-  public void ReplaceSamples(float[] samples) {
-    this.samples = samples;
-  }
+    public void ShiftSampleOver(int pixels, int framesPerPixel)
+    {
+        MoveToFrame(Math.Max(0, checked(startFrame + (long)pixels * Math.Max(1, framesPerPixel))));
+    }
 
     public void Normalize()
     {
         if (samples.Length == 0 || Volume == 0)
-        {
             return;
-        }
-
         float peak = 0;
-
+        foreach (float sample in samples)
+            peak = Math.Max(peak, Math.Abs(sample * Volume));
+        if (peak == 0)
+            return;
+        SaveState();
+        float gain = 0.95f / peak;
         for (int i = 0; i < samples.Length; i++)
+            samples[i] *= gain;
+        Changed();
+    }
+
+    public void Reverse()
+    {
+        SaveState();
+        int frames = samples.Length / channels;
+        for (int frame = 0; frame < frames / 2; frame++)
         {
-            float value = Math.Abs(samples[i] * Volume);
-            if (value > peak)
+            for (int channel = 0; channel < channels; channel++)
             {
-                peak = value;
+                int left = frame * channels + channel;
+                int right = (frames - 1 - frame) * channels + channel;
+                (samples[left], samples[right]) = (samples[right], samples[left]);
             }
         }
+        Changed();
+    }
 
-        if (peak == 0)
-        {
-            return;
-        }
-
+    public void Flip()
+    {
         SaveState();
-
-        float gain = 0.95f / peak;
-
         for (int i = 0; i < samples.Length; i++)
+            samples[i] *= -1;
+        Changed();
+    }
+
+    public void FadeIn() => ApplyFade(true);
+    public void FadeOut() => ApplyFade(false);
+
+    private void ApplyFade(bool fadeIn)
+    {
+        int frameCount = samples.Length / channels;
+        if (frameCount < 2)
+            return;
+        SaveState();
+        for (int frame = 0; frame < frameCount; frame++)
         {
-            samples[i] *= gain;
+            float progress = (float)frame / (frameCount - 1);
+            float gain = fadeIn ? progress : 1.0f - progress;
+            for (int channel = 0; channel < channels; channel++)
+                samples[frame * channels + channel] *= gain;
         }
-
-        PanDrawSamples?.Invalidate();
+        Changed();
     }
-
-    public void Reverse() {
-    SaveState();
-    for (int i = 0; i < samples.Length / 2; i++) {
-      var temp = samples[i];
-      samples[i] = samples[samples.Length - 1 - i];
-      samples[samples.Length - 1 - i] = temp;
-    }
-  }
-  public void Flip() {
-    SaveState();
-    for (int i = 0; i < samples.Length; i++) {
-      samples[i] *= -1;
-    }
-  }
-
-public void FadeIn()
-{
-    ApplyFade(true);
-}
-
-public void FadeOut()
-{
-    ApplyFade(false);
-}
-
-private void ApplyFade(bool fadeIn)
-{
-    if (channels <= 0)
-    {
-    return;
-    }
-
-    int frameCount = samples.Length / channels;
-
-    if (frameCount < 2)
-    {
-        return;
-    }
-
-    SaveState();
-
-    for (int frame = 0; frame < frameCount; frame++)
-    {
-        float progress = (float)frame / (frameCount - 1);
-        float gain = fadeIn ? progress : 1.0f - progress;
-
-        for (int channel = 0; channel < channels; channel++)
-        {
-            int index = frame * channels + channel;
-            samples[index] *= gain;
-        }
-    }
-
-    PanDrawSamples?.Invalidate();
-}
-
-
-    public double DurationSeconds =>
-      samples.Length / (double)((sampleRate > 0 ? sampleRate : 44100) * channels);
 
     public bool Trim(double startTime, double endTime)
     {
-        if (startTime < 0 || startTime >= endTime || endTime > DurationSeconds)
-        {
+        if (!double.IsFinite(startTime) || !double.IsFinite(endTime) ||
+            startTime < 0 || startTime >= endTime || endTime > DurationSeconds)
             return false;
-        }
-
-        int rate = sampleRate > 0 ? sampleRate : 44100;
-        int start = (int)(startTime * rate) * channels;
-        int end = (int)(endTime * rate) * channels;
-
+        int start = (int)Math.Round(startTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
+        int end = (int)Math.Round(endTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
         if (start >= end || (start == 0 && end == samples.Length))
-        {
             return false;
-        }
-
         SaveState();
+        startFrame += (long)Math.Round(start / (double)channels / sampleRate * AudioData.SampleRate,
+                                      MidpointRounding.AwayFromZero);
         samples = samples[start..end];
-        PanDrawSamples?.Invalidate();
-
+        Changed();
         return true;
     }
 
     public Track Split(double splitTime)
     {
-        int rate = sampleRate > 0 ? sampleRate : 44100;
-        int channelCount = Math.Max(1, channels);
-        int splitIndex = (int)(splitTime * rate) * channelCount;
-
-        if (splitTime <= 0 || splitTime >= DurationSeconds ||
-            splitIndex <= 0 || splitIndex >= samples.Length)
-        {
+        if (!double.IsFinite(splitTime) || splitTime <= 0 || splitTime >= DurationSeconds)
             return null;
-        }
+        int splitIndex = (int)Math.Round(splitTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
+        if (splitIndex <= 0 || splitIndex >= samples.Length)
+            return null;
 
+        Track second = Duplicate();
+        second.ReplaceSamples(samples[splitIndex..]);
+        second.MoveToFrame(checked(startFrame + (long)Math.Round(
+            splitIndex / (double)channels / sampleRate * AudioData.SampleRate,
+            MidpointRounding.AwayFromZero)));
 
-
-        Track secondTrack = Duplicate();
-
-        float[] secondSamples = new float[samples.Length];
-        Array.Copy(samples, splitIndex, secondSamples,
-            splitIndex, samples.Length - splitIndex);
-
-        secondTrack.ReplaceSamples(secondSamples);
-
-
+        // Complete structural Undo/Redo is tracked separately in issue #20.
         undoHistory.Clear();
         redoHistory.Clear();
-
-        ReplaceSamples(samples[..splitIndex]);
-
-
-        PanDrawSamples?.Invalidate();
-
-        return secondTrack;
+        samples = samples[..splitIndex];
+        Changed();
+        return second;
     }
 
-    public void AlterTimeScale(float scale) {
-  }
-  public void SetVolume(float newVolume) {
-    Volume = newVolume;
-  }
+    public void AlterTimeScale(float scale) { }
+
+    public void SetVolume(float newVolume)
+    {
+        if (Volume == newVolume)
+            return;
+        Volume = newVolume;
+        Changed();
+    }
 
     public void ChangeVolume(float newVolume)
     {
         if (Volume == newVolume)
-        {
             return;
-        }
-
         SaveState();
         SetVolume(newVolume);
     }
 
-    public void EliminateSilence(SampleRegion region, float minDuration, float thres) {
-    float[] newSamples = CloneSamples();
-    if (region is SampleRegion.BEGINNING_ONLY or SampleRegion.BEGINNING_AND_END) {
-      int silentDurationInNumSamples = 0;
-      for (int i = 0; i < newSamples.Length; i++) {
-        if (Math.Abs(newSamples[i]) <= thres) {
-          silentDurationInNumSamples++;
-        }
-        else {
-          break;
-        }
-      }
-      if ((float)silentDurationInNumSamples / sampleRate >= minDuration) {
-        newSamples = newSamples[silentDurationInNumSamples..];
-      }
-    }
-    if (region is SampleRegion.END_ONLY or SampleRegion.BEGINNING_AND_END) {
-      int silentDurationInNumSamples = 0;
-      for (int i = newSamples.Length - 1; i >= 0; i--) {
-        if (Math.Abs(newSamples[i]) <= thres) {
-          silentDurationInNumSamples++;
-        }
-        else {
-          break;
-        }
-      }
-      if ((float)silentDurationInNumSamples / sampleRate >= minDuration) {
-        newSamples = newSamples[0..^silentDurationInNumSamples];
-      }
-    }
-    if (region is SampleRegion.ANYWHERE) {
-      int silentDurationInNumSamples = 0;
-      int silentRegionStart = 0;
-      int i;
-      for (i = 0; i < newSamples.Length; i++) {
-        if (Math.Abs(newSamples[i]) <= thres) {
-          silentDurationInNumSamples++;
-        }
-        else {
-          if ((float)silentDurationInNumSamples / sampleRate >= minDuration) {
-            newSamples = [..newSamples[0..silentRegionStart], ..newSamples[i..]];
-            i = 0;
-          }
-          silentRegionStart = i + 1;
-          silentDurationInNumSamples = 0;
-        }
-      }
-      if ((float)silentDurationInNumSamples / sampleRate >= minDuration) {
-        newSamples = [.. newSamples[0..silentRegionStart], .. newSamples[i..]];
-      }
-    }
-
-        if (newSamples.Length != samples.Length)
+    public void EliminateSilence(SampleRegion region, float minDuration, float threshold)
+    {
+        if (!float.IsFinite(minDuration) || !float.IsFinite(threshold) || minDuration < 0 || threshold < 0)
+            return;
+        int frames = samples.Length / channels;
+        long minimumFrames = Math.Max(1, (long)Math.Ceiling((double)minDuration * sampleRate));
+        bool Silent(int frame)
         {
-            SaveState();
-            samples = newSamples;
+            for (int channel = 0; channel < channels; channel++)
+                if (Math.Abs(samples[frame * channels + channel]) > threshold)
+                    return false;
+            return true;
         }
+
+        float[] result;
+        if (region == SampleRegion.ANYWHERE)
+        {
+            List<float> retained = new();
+            int frame = 0;
+            while (frame < frames)
+            {
+                int start = frame;
+                if (Silent(frame))
+                {
+                    while (frame < frames && Silent(frame))
+                        frame++;
+                    if (frame - start >= minimumFrames)
+                        continue;
+                }
+                else
+                    frame++;
+                retained.AddRange(samples.AsSpan(start * channels, (frame - start) * channels).ToArray());
+            }
+            result = retained.ToArray();
+        }
+        else
+        {
+            int start = 0;
+            int end = frames;
+            if (region is SampleRegion.BEGINNING_ONLY or SampleRegion.BEGINNING_AND_END)
+            {
+                int silent = 0;
+                while (silent < end && Silent(silent)) silent++;
+                if (silent >= minimumFrames) start = silent;
+            }
+            if (region is SampleRegion.END_ONLY or SampleRegion.BEGINNING_AND_END)
+            {
+                int silent = 0;
+                while (end - silent > start && Silent(end - silent - 1)) silent++;
+                if (silent >= minimumFrames) end -= silent;
+            }
+            result = samples[(start * channels)..(end * channels)];
+        }
+        if (result.Length == samples.Length)
+            return;
+        SaveState();
+        samples = result;
+        Changed();
     }
 
+    internal float[] GetMixSamples() => CloneSamples();
 
-    // play
+    public float[] GetAdjustedSamples()
+    {
+        float[] normalized = GetMixSamples();
+        int offset = checked((int)(startFrame * AudioData.Channels));
+        float[] result = new float[checked(offset + normalized.Length)];
+        for (int i = 0; i < normalized.Length; i++)
+            result[offset + i] = normalized[i] * Volume;
+        return result;
+    }
 
     public void Play()
     {
@@ -378,82 +324,103 @@ private void ApplyFade(bool fadeIn)
             outputDevice.Play();
             return;
         }
+        PlayFromFrame(0);
+    }
 
+    internal void PlayFromFrame(long frame)
+    {
         outputDevice?.Dispose();
-        fileReader?.Dispose();
-        SaveToTempFile();
-        fileReader = new AudioFileReader(tempFilePath);
-        outputDevice = new WaveOut();
-        outputDevice.Init(fileReader);
-        outputDevice.Play();
+        outputDevice = null;
+        float[] audio = GetAdjustedSamples();
+        playbackLengthFrames = audio.Length / AudioData.Channels;
+        playbackStartFrame = Math.Clamp(frame, 0, playbackLengthFrames);
+        if (playbackStartFrame == playbackLengthFrames)
+            return;
+        var provider = new AudioArraySampleProvider(audio, AudioData.SampleRate, AudioData.Channels,
+            checked((int)(playbackStartFrame * AudioData.Channels)));
+        outputDevice = playbackFactory();
+        try
+        {
+            outputDevice.Init(new SampleToWaveProvider(provider));
+            outputDevice.Play();
+        }
+        catch
+        {
+            outputDevice.Dispose();
+            outputDevice = null;
+            throw;
+        }
     }
 
-    public void Pause() {
-    outputDevice?.Pause();
-  }
-  public void Reset() {
-  }
-  public int GetPlayheadPos() {
-    return (int)((outputDevice?.GetPosition() ?? 0) / 4);
-  }
-  public void ToggleDisabled() {
-    IsDisabled = !IsDisabled;
-  }
-
-  // file i/o
-  private void SaveToTempFile() {
-    Directory.CreateDirectory(Path.GetDirectoryName(tempFilePath));
-    using var writer = new WaveFileWriter(tempFilePath, fileReader?.WaveFormat ?? new());
-    writer.WriteSamples(GetAdjustedSamples(), 0, samples.Length);
-  }
-  public void SaveToFile(string path) {
-    Directory.CreateDirectory(Path.GetDirectoryName(path));
-    using var writer = new WaveFileWriter(path, fileReader?.WaveFormat ?? new());
-    writer.WriteSamples(GetAdjustedSamples(), 0, samples.Length);
-  }
-  public float[] GetAdjustedSamples() {
-    float[] adjSamples = new float[samples.Length];
-    for (int s = 0; s < samples.Length; s++) {
-      adjSamples[s] = samples[s] * Volume;
-    }
-    float[] deadSpace = new float[DrawOffset * drawTimescale];
-    for (int i = 0; i < DrawOffset; i++) {
-      deadSpace[i] = 0.0f;
+    public void Pause() => outputDevice?.Pause();
+    public void Reset()
+    {
+        outputDevice?.Dispose();
+        outputDevice = null;
+        playbackStartFrame = 0;
     }
 
-    return [.. deadSpace, .. adjSamples];
-  }
-
-  // render
-  public void ShiftSampleOver(int amount) {
-    DrawOffset += amount;
-    DrawOffset = Math.Max(0, DrawOffset);
-  }
-  public void DrawSamples(Graphics g, int drawTimescale) {
-    if (PanDrawSamples is null) {
-      return;
+    public long GetPlayheadFrame()
+    {
+        if (outputDevice is not IWavePosition position)
+            return playbackStartFrame;
+        WaveFormat format = position.OutputWaveFormat;
+        long outputFrames = position.GetPosition() / format.BlockAlign;
+        long timelineFrames = (long)(outputFrames * (double)AudioData.SampleRate / format.SampleRate);
+        return Math.Min(playbackLengthFrames, playbackStartFrame + timelineFrames);
     }
 
-    this.drawTimescale = drawTimescale;
-    float heightAdj = PanDrawSamples.Height / 2;
-    if (samples != null && samples.Length > 0) {
-      int x = DrawOffset;
-      Pen pen = new(IsDisabled ? Settings.Color.TrackSamples_Disabled : Settings.Color.TrackSamples_Enabled);
-      List<Point> points = new();
-      for (int s = 0; s < samples.Length; s += drawTimescale) {
-        var sample = (int)(samples[s] * heightAdj * Volume);
-        points.Add(new(x, PanDrawSamples.Height / 2));
-        points.Add(new(x, PanDrawSamples.Height / 2 - sample));
-        x++;
-      }
-      g.DrawLines(pen, points.ToArray());
-      pen.Dispose();
-    }
-  }
+    public int GetPlayheadPos() => (int)Math.Min(int.MaxValue, GetPlayheadFrame());
 
-  // dispose
-  public void Dispose() {
-    outputDevice?.Dispose();
-    fileReader?.Dispose();
-  }
+    public void ToggleDisabled()
+    {
+        IsDisabled = !IsDisabled;
+        Changed();
+    }
+
+    public void SaveToFile(string path)
+    {
+        string directory = Path.GetDirectoryName(Path.GetFullPath(path));
+        Directory.CreateDirectory(directory);
+        float[] audio = GetAdjustedSamples();
+        using WaveFileWriter writer = new(path, AudioData.MixFormat);
+        writer.WriteSamples(audio, 0, audio.Length);
+    }
+
+    public void DrawSamples(Graphics graphics, int framesPerPixel)
+    {
+        if (PanDrawSamples is null || samples.Length == 0)
+            return;
+        framesPerPixel = Math.Max(1, framesPerPixel);
+        long firstPixel = startFrame / framesPerPixel;
+        int visiblePixels = PanDrawSamples.ClientSize.Width;
+        if (firstPixel >= visiblePixels)
+            return;
+        float center = PanDrawSamples.ClientSize.Height / 2.0f;
+        using Pen pen = new(IsDisabled ? Settings.Color.TrackSamples_Disabled : Settings.Color.TrackSamples_Enabled);
+        int sourceFrames = samples.Length / channels;
+        for (int x = (int)firstPixel; x < visiblePixels; x++)
+        {
+            double projectFrame = (long)x * framesPerPixel - startFrame;
+            int frame = (int)Math.Max(0, Math.Round(projectFrame * sampleRate / AudioData.SampleRate));
+            if (frame >= sourceFrames)
+                break;
+            float minimum = 0;
+            float maximum = 0;
+            for (int channel = 0; channel < channels; channel++)
+            {
+                float value = samples[frame * channels + channel] * Volume;
+                minimum = Math.Min(minimum, value);
+                maximum = Math.Max(maximum, value);
+            }
+            graphics.DrawLine(pen, x, center - Math.Clamp(maximum, -1, 1) * center,
+                                   x, center - Math.Clamp(minimum, -1, 1) * center);
+        }
+    }
+
+    public void Dispose()
+    {
+        outputDevice?.Dispose();
+        outputDevice = null;
+    }
 }
