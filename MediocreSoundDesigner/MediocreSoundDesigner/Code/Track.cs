@@ -20,6 +20,8 @@ public partial class Track : IDisposable
     private IWavePlayer outputDevice;
     private long playbackStartFrame;
     private long playbackLengthFrames;
+    private float[] playbackAudio;
+    private long playbackAudioRevision = -1;
     private long startFrame;
 
     private readonly Stack<(float[] Samples, float Volume, long StartFrame)> undoHistory = new();
@@ -384,7 +386,14 @@ public partial class Track : IDisposable
     {
         outputDevice?.Dispose();
         outputDevice = null;
-        float[] audio = GetAdjustedSamples();
+        // Scrubbing opens a new stream at another offset in the same immutable
+        // snapshot, without copying the entire mix for every mouse movement.
+        if (playbackAudio is null || playbackAudioRevision != Revision)
+        {
+            playbackAudio = GetAdjustedSamples();
+            playbackAudioRevision = Revision;
+        }
+        float[] audio = playbackAudio;
         playbackLengthFrames = audio.Length / AudioData.Channels;
         playbackStartFrame = Math.Clamp(frame, 0, playbackLengthFrames);
         if (playbackStartFrame == playbackLengthFrames)
@@ -480,5 +489,6 @@ public partial class Track : IDisposable
     {
         outputDevice?.Dispose();
         outputDevice = null;
+        playbackAudio = null;
     }
 }
