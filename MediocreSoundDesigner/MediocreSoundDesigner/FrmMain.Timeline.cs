@@ -18,7 +18,7 @@ public partial class FrmMain
         BindTimelineInput(panTracks);
         BindTimelineInput(lblPlayhead);
         panTracks.Scroll += (sender, e) => UpdateTimelineView();
-        panTracks.ClientSizeChanged += (sender, e) => LayoutTimelineRuler();
+        panTracks.ClientSizeChanged += (sender, e) => { LayoutTimelineRuler(); LayoutRangeReadout(); };
         ToolTip help = new(components);
         help.SetToolTip(timelineRuler, "Click or right-drag to move the playhead.");
         help.SetToolTip(panTracks, "Right-click or right-drag a waveform to move the playhead.");
@@ -30,6 +30,10 @@ public partial class FrmMain
         control.MouseMove += Timeline_MouseMove;
         control.MouseUp += Timeline_MouseUp;
         control.MouseCaptureChanged += Timeline_MouseCaptureChanged;
+        control.MouseDown += Range_MouseDown;
+        control.MouseMove += Range_MouseMove;
+        control.MouseUp += Range_MouseUp;
+        control.MouseCaptureChanged += Range_MouseCaptureChanged;
     }
 
     private void Timeline_MouseDown(object sender, MouseEventArgs e)
@@ -39,6 +43,7 @@ public partial class FrmMain
             (e.Button == MouseButtons.Left && (source == timelineRuler || source == lblPlayhead));
         if (!handle)
             return;
+        EndRangeDrag();
         EndTimelineDrag();
         if (source.Tag is Track track)
             trackManager.SelectTrack(track);
@@ -133,6 +138,7 @@ public partial class FrmMain
         panTracks.AutoScrollPosition = new Point(0, -scroll.Y);
         lblPlayhead.BringToFront();
         LayoutTimelineRuler();
+        LayoutRangeReadout();
     }
 
     private void UpdateTimelineView()

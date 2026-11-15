@@ -3,7 +3,7 @@ namespace MediocreSoundDesigner;
 public partial class TrackManager
 {
     private sealed record TrackEntry(Track Track, Track.EditState State);
-    private sealed record ProjectState(TrackEntry[] Tracks, Track Selected);
+    private sealed record ProjectState(TrackEntry[] Tracks, Track Selected, TimelineSelection Range);
     private sealed record EditEntry(ProjectState Before, ProjectState After);
 
     private readonly Stack<EditEntry> undoHistory = new();
@@ -43,7 +43,7 @@ public partial class TrackManager
             }
             entries[i] = new(track, captured.State);
         }
-        return new(entries, Tracks.Contains(SelectedTrack) ? SelectedTrack : null);
+        return new(entries, Tracks.Contains(SelectedTrack) ? SelectedTrack : null, ValidateRange(RangeSelection));
     }
 
     private static bool SameContent(ProjectState left, ProjectState right)
@@ -80,6 +80,7 @@ public partial class TrackManager
                 capturedTracks[entry.Track] = (entry.Track.Revision, entry.State);
             }
             SelectTrack(state.Selected);
+            RangeSelection = ValidateRange(state.Range);
         }
         finally { restoringHistory = false; }
     }
@@ -100,6 +101,7 @@ public partial class TrackManager
         try
         {
             action();
+            RangeSelection = ValidateRange(RangeSelection);
             after = CaptureProject();
         }
         catch
@@ -227,6 +229,7 @@ public partial class TrackManager
         }
         tracks.Clear();
         ownedTracks.Clear();
+        RangeSelection = null;
         capturedTracks.Clear();
         undoHistory.Clear();
         redoHistory.Clear();

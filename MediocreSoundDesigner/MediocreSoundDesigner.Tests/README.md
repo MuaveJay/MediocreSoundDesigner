@@ -58,3 +58,13 @@ seconds from the selected track's own start, initialized from the current cursor
 when it is inside the track. Numeric entry rounds once to the common frame grid.
 Tests verify sample-exact boundaries, moved/repeated splits, channel/settings
 preservation, Undo/Redo, playback states, optional numeric entry, and UI alignment.
+
+
+Left-drag a waveform in either direction to select the range to keep. The readout
+shows absolute start/end and duration; Ctrl+T (Edit > Trim to Selection) removes
+the outside audio while preserving its original project placement. A whole-track
+or empty selection makes no edit. Escape clears the range. Changing tracks clears
+the old range; Undo/Redo of an audio edit restores its associated range.
+Right-drag still seeks. Ctrl+Shift+T (Trim at Times...) keeps optional numeric
+track-relative input. Visual trim checks use exact integer frames and hidden
+forms with synthetic mouse events; no screen/audio capture or playback occurs.

@@ -77,6 +77,7 @@ public partial class FrmMain : Form
         SetupTransport(playbackMenu);
         SetupTimeline();
         SetupSplitControls();
+        SetupTrimControls();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -92,6 +93,7 @@ public partial class FrmMain : Form
         trkPlaybackPosition.BackColor = Settings.Color.WinBg;
         timelineRuler.BackColor = Settings.Color.WinBg;
         timelineRuler.ForeColor = Settings.Color.WinFg;
+        lblSelectionRange.ForeColor = Settings.Color.WinFg;
         timelineRuler.Invalidate();
         trackManager.ApplySettings();
     }
@@ -99,6 +101,13 @@ public partial class FrmMain : Form
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (keyData == Keys.Escape)
+        {
+            EndRangeDrag();
+            trackManager.ClearRangeSelection();
+            UpdateTrimControls();
+            return true;
+        }
         if (keyData == Keys.Space)
         {
             btnPlay_Click(this, EventArgs.Empty);
@@ -135,6 +144,7 @@ public partial class FrmMain : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        EndRangeDrag();
         EndTimelineDrag();
         trackManager?.Dispose();
         base.OnFormClosed(e);
@@ -318,6 +328,8 @@ public partial class FrmMain : Form
 
     private void RefreshTrackPanels()
     {
+        if (rangeDragTrack is not null && (!trackManager.Tracks.Contains(rangeDragTrack) || rangeDragTrack.Revision != rangeDragRevision))
+            EndRangeDrag();
         if (timelineDragSource?.Tag is Track dragged && !trackManager.Tracks.Contains(dragged))
             EndTimelineDrag();
         foreach (Panel panel in panTracks.Controls.OfType<Panel>().ToArray())
@@ -351,6 +363,7 @@ public partial class FrmMain : Form
         {
             trackManager.SelectTrack(track);
             UpdateSplitControls();
+            UpdateTrimControls();
         };
         pan.Tag = track;
         BindTimelineInput(pan);
@@ -364,6 +377,7 @@ public partial class FrmMain : Form
         pan.Paint += (sender, e) =>
         {
             track.DrawSamples(e.Graphics, trackManager.DrawTimescale);
+            PaintRangeSelection(track, e.Graphics, pan.ClientSize);
             if (trackManager.SelectedTrack == track)
             {
                 using Pen outline = new(Settings.Color.Playline);
@@ -399,7 +413,8 @@ public partial class FrmMain : Form
         // Track area
         panTracks.Left = PADDING;
         LayoutTimelineRuler();
-        panTracks.Top = timelineRuler.Bottom;
+        LayoutRangeReadout();
+        panTracks.Top = lblSelectionRange.Bottom + 3;
         panTracks.Width = width;
         panTracks.Height = Math.Max(100,
             btnPlay.Top - panTracks.Top - PADDING);
@@ -421,26 +436,5 @@ public partial class FrmMain : Form
 
     }
 
-
-    private void menuEditTrim_Click(object sender, EventArgs e)
-    {
-        Track track = trackManager.SelectedTrack;
-
-        if (track is null)
-        {
-            return;
-        }
-
-        using FrmEditTrim frm = new();
-        frm.SetSound(track);
-
-        if (frm.ShowDialog() == DialogResult.OK)
-        {
-            if (!track.Trim(frm.StartSeconds, frm.EndSeconds))
-            {
-                MessageBox.Show("Unable to trim the selected range.");
-            }
-        }
-    }
 
 }
