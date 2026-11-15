@@ -94,6 +94,7 @@ public partial class FrmMain
         lblPlaybackTime.Text = $"{FormatTimestamp(frame)} / {FormatTimestamp(duration)}";
         UpdateTimelineView();
         UpdateSplitControls();
+        UpdateTrimControls();
     }
 
     private void LayoutTransportControls()

@@ -233,13 +233,21 @@ public partial class Track : IDisposable
         if (!double.IsFinite(startTime) || !double.IsFinite(endTime) ||
             startTime < 0 || startTime >= endTime || endTime > DurationSeconds)
             return false;
-        int start = (int)Math.Round(startTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
-        int end = (int)Math.Round(endTime * sampleRate, MidpointRounding.AwayFromZero) * channels;
-        if (start >= end || (start == 0 && end == samples.Length))
+        return TrimFrames((long)Math.Round(startTime * sampleRate, MidpointRounding.AwayFromZero),
+            (long)Math.Round(endTime * sampleRate, MidpointRounding.AwayFromZero));
+    }
+
+    internal bool TrimFrames(long firstFrame, long endFrame)
+    {
+        if (NeedsProjectEdit)
+            return HistoryOwner.ExecuteEdit(() => TrimFrames(firstFrame, endFrame));
+        if (firstFrame < 0 || endFrame > TimelineFrameCount || firstFrame >= endFrame ||
+            (firstFrame == 0 && endFrame == TimelineFrameCount))
             return false;
+        int start = checked((int)(firstFrame * channels));
+        int end = checked((int)(endFrame * channels));
         SaveState();
-        startFrame += (long)Math.Round(start / (double)channels / sampleRate * AudioData.SampleRate,
-                                      MidpointRounding.AwayFromZero);
+        startFrame = checked(startFrame + firstFrame);
         samples = samples[start..end];
         Changed();
         return true;

@@ -49,6 +49,8 @@ public partial class TrackManager : IDisposable
 
     public void SelectTrack(Track track)
     {
+        if (SelectedTrack != track)
+            ClearRangeSelection();
         SelectedTrack = track;
         foreach (Track item in Tracks)
         {

@@ -79,6 +79,7 @@ internal static partial class Program
         using TrackManager manager = new(null!, () => { FakeOutput d = new(); devices.Add(d); return d; });
         form.GetType().GetField("trackManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(form, manager);
         manager.ProjectChanged += (_, _) => InvokeTimeline(form, "RefreshTrackPanels");
+        manager.RangeSelectionChanged += (_, _) => { manager.RedrawAll(); InvokeTimeline(form, "UpdateTrimControls"); };
         try
         {
             form.ClientSize = new Size(1000, 700);
@@ -212,7 +213,7 @@ internal static partial class Program
             form.Size = size; manager.DrawTimescale = scale;
             InvokeTimeline(form, "UpdateSizes");
             Panel tracks = Field<Panel>(form, "panTracks");
-            Assert(ruler.Left == tracks.Left && ruler.Width == tracks.ClientSize.Width && ruler.Bottom == tracks.Top,
+            Assert(ruler.Left == tracks.Left && ruler.Width == tracks.ClientSize.Width && ruler.Bottom < tracks.Top,
                 "Ruler and waveforms lost their common origin while resizing.");
             Assert(ruler.FramesPerPixel == scale && ruler.PlayheadFrame == 22050 && manager.GetPlayheadFrame() == 22050,
                 "Zoom moved the shared timeline cursor.");

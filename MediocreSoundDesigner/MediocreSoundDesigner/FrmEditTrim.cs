@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,13 +16,22 @@ public partial class FrmEditTrim : Form
     public FrmEditTrim()
     {
         InitializeComponent();
+        Text = "Trim at Times";
+        nudStart.DecimalPlaces = nudEnd.DecimalPlaces = 6;
+        nudStart.Increment = nudEnd.Increment = 0.001m;
+        AcceptButton = btnTrim;
+        CancelButton = btnCancel;
+        StartPosition = FormStartPosition.CenterParent;
     }
 
-    public void SetSound(Track track)
+    public void SetSound(Track track, double? initialStart = null, double? initialEnd = null)
     {
         nudStart.Maximum = (decimal)track.DurationSeconds;
         nudEnd.Maximum = (decimal)track.DurationSeconds;
-        nudEnd.Value = (decimal)track.DurationSeconds;
+        bool valid = initialStart is double start && initialEnd is double end && double.IsFinite(start) &&
+                     double.IsFinite(end) && start >= 0 && start < end && end <= track.DurationSeconds;
+        nudStart.Value = valid ? (decimal)initialStart.Value : 0;
+        nudEnd.Value = valid ? (decimal)initialEnd.Value : (decimal)track.DurationSeconds;
     }
 
     public double StartSeconds => (double)nudStart.Value;
