@@ -1,8 +1,11 @@
-﻿namespace MediocreSoundDesigner;
+namespace MediocreSoundDesigner;
 
 public partial class FrmEditMaster : Form {
   // fields
   protected Track track;
+  [System.ComponentModel.Browsable(false)]
+  [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+  public Action<Action> EditExecutor { get; set; }
 
   // ctor
   public FrmEditMaster() {
@@ -28,7 +31,10 @@ public partial class FrmEditMaster : Form {
   }
 
   public void btnApply_Click(object sender, EventArgs e) {
-    Apply();
+    if (EditExecutor is null)
+      Apply();
+    else
+      EditExecutor(Apply);
     track?.PanDrawSamples?.Invalidate();
     DialogResult = DialogResult.OK;
     Close();

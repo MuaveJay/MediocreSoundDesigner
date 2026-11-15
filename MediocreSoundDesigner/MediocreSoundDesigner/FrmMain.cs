@@ -21,6 +21,9 @@ public partial class FrmMain : Form
     {
         DoubleBuffered = true;
         trackManager = new(panTracks);
+        trackManager.ProjectChanged += (sender, e) => RefreshTrackPanels();
+        menuEditUndo.Enabled = false;
+        menuEditRedo.Enabled = false;
         btnPlay.Parent = this;
         MinimumSize = new Size(650, 500);
         menuEdit.DropDownItems.Add(
@@ -43,10 +46,7 @@ public partial class FrmMain : Form
                     return;
                 }
 
-                Track newTrack = copiedTrack.Duplicate();
-                CreateTrackPanel(newTrack);
-                trackManager.AddTrack(newTrack);
-                UpdateSizes();
+                trackManager.PasteTrack(copiedTrack);
             })
             {
                 ShortcutKeys = Keys.Control | Keys.V
@@ -110,13 +110,9 @@ public partial class FrmMain : Form
             {
                 if (trackManager.SelectedTrack is not null)
                 {
-                    if (MessageBox.Show("This will delete the selected track. This is NOT undoable!", "Are You Sure?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+                    if (MessageBox.Show("Delete the selected track? You can undo this action.", "Are You Sure?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation) == DialogResult.Yes)
                     {
-                        panTracks.Controls.Remove(trackManager.SelectedTrack.PanDrawSamples);
-                        trackManager.SelectedTrack.PanDrawSamples.Dispose();
-                        trackManager.SelectedTrack.Dispose();
                         trackManager.RemTrack(trackManager.SelectedTrack);
-                        UpdateSizes();
                         return true;
                     }
                 }
@@ -160,10 +156,7 @@ public partial class FrmMain : Form
             try
             {
                 Track newTrack = new(ofdLoadFile.FileName);
-                CreateTrackPanel(newTrack);
-                trackManager.AddTrack(newTrack);
-                UpdateSizes();
-                newTrack.PanDrawSamples.Invalidate();
+                AddTrackAndSelect(newTrack);
             }
             catch (Exception error)
             {
@@ -192,12 +185,12 @@ public partial class FrmMain : Form
 
     private void menuEditUndo_Click(object sender, EventArgs e)
     {
-        trackManager.SelectedTrack?.Undo();
+        trackManager.Undo();
     }
 
     private void menuEditRedo_Click(object sender, EventArgs e)
     {
-        trackManager.SelectedTrack?.Redo();
+        trackManager.Redo();
     }
 
 
@@ -224,6 +217,7 @@ public partial class FrmMain : Form
         {
             FrmEditVolume frm = new();
             frm.SetSound(trackManager.SelectedTrack);
+            frm.EditExecutor = action => { trackManager.ExecuteEdit(action); };
             frm.ShowDialog();
         }
     }
@@ -233,25 +227,22 @@ public partial class FrmMain : Form
         {
             FrmEditEliminateSilence frm = new();
             frm.SetSound(trackManager.SelectedTrack);
+            frm.EditExecutor = action => { trackManager.ExecuteEdit(action); };
             frm.ShowDialog();
         }
     }
 
     private void menuGenRecord_Click(object sender, EventArgs e)
     {
-        Track newTrack = new(new float[0]);
-        CreateTrackPanel(newTrack);
-        trackManager.AddTrack(newTrack);
-        UpdateSizes();
-        newTrack.PanDrawSamples.Invalidate();
-
-        FrmGenRecord frm = new();
-        frm.SetSound(trackManager.SelectedTrack);
-        if (frm.ShowDialog() == DialogResult.Cancel)
-        {
-            trackManager.RemTrack(newTrack);
-        }
+        Track newTrack = new(Array.Empty<float>());
+        using FrmGenRecord frm = new();
+        frm.SetSound(newTrack);
+        if (frm.ShowDialog() == DialogResult.OK)
+            AddTrackAndSelect(newTrack);
+        else
+            newTrack.Dispose();
     }
+
     private void menuGenNoise_Click(object sender, EventArgs e)
     {
         const int NUM_SAMPLES = 100_000;
@@ -262,10 +253,7 @@ public partial class FrmMain : Form
             samples[i] = rand.NextSingle() * 2.0f - 1.0f;
         }
         Track newTrack = new(samples);
-        CreateTrackPanel(newTrack);
-        trackManager.AddTrack(newTrack);
-        UpdateSizes();
-        newTrack.PanDrawSamples.Invalidate();
+        AddTrackAndSelect(newTrack);
     }
     private void menuGenGradientNoise_Click(object sender, EventArgs e)
     {
@@ -293,10 +281,7 @@ public partial class FrmMain : Form
             samples[i] = cur;
         }
         Track newTrack = new(samples);
-        CreateTrackPanel(newTrack);
-        trackManager.AddTrack(newTrack);
-        UpdateSizes();
-        newTrack.PanDrawSamples.Invalidate();
+        AddTrackAndSelect(newTrack);
     }
 
     private void tmrUpdatePlaybackState_Tick(object sender, EventArgs e)
@@ -334,6 +319,35 @@ public partial class FrmMain : Form
     }
 
     // Helper methods
+    private void AddTrackAndSelect(Track track)
+    {
+        trackManager.ExecuteEdit(() =>
+        {
+            trackManager.AddTrack(track);
+            trackManager.SelectTrack(track);
+        });
+    }
+
+    private void RefreshTrackPanels()
+    {
+        foreach (Panel panel in panTracks.Controls.OfType<Panel>().ToArray())
+        {
+            if (panel.Tag is Track track && !trackManager.Tracks.Contains(track))
+                panTracks.Controls.Remove(panel);
+        }
+        foreach (Track track in trackManager.Tracks)
+        {
+            if (track.PanDrawSamples is null || track.PanDrawSamples.IsDisposed)
+                CreateTrackPanel(track);
+            else if (track.PanDrawSamples.Parent != panTracks)
+                panTracks.Controls.Add(track.PanDrawSamples);
+        }
+        trackManager.SelectTrack(trackManager.SelectedTrack);
+        menuEditUndo.Enabled = trackManager.CanUndo;
+        menuEditRedo.Enabled = trackManager.CanRedo;
+        UpdateSizes();
+    }
+
     private Panel CreateTrackPanel(Track track)
     {
         Panel pan = new()
@@ -347,6 +361,7 @@ public partial class FrmMain : Form
         {
             trackManager.SelectTrack(track);
         };
+        pan.Tag = track;
         pan.DoubleClick += (sender, e) =>
         {
             track.ToggleDisabled();
@@ -358,7 +373,6 @@ public partial class FrmMain : Form
         };
         panTracks.Controls.Add(pan);
         track.LinkPanels(pan, panTracks);
-        trackManager.SelectTrack(track);
 
         return pan;
     }
@@ -458,7 +472,7 @@ public partial class FrmMain : Form
 
         if (frm.ShowDialog() == DialogResult.OK)
         {
-            Track secondTrack = track.Split(frm.SplitSeconds);
+            Track secondTrack = trackManager.SplitTrack(track, frm.SplitSeconds);
 
             if (secondTrack is null)
             {
@@ -466,9 +480,7 @@ public partial class FrmMain : Form
                 return;
             }
 
-            CreateTrackPanel(secondTrack);
-            trackManager.AddTrack(secondTrack);
-            UpdateSizes();
+
         }
     }
 

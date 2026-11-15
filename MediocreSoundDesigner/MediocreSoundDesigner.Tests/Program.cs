@@ -1,9 +1,10 @@
 using MediocreSoundDesigner;
 using NAudio.Wave;
 
-internal static class Program
+internal static partial class Program
 {
     private static int failures;
+    private static int checks;
 
     [STAThread]
     private static int Main()
@@ -27,12 +28,14 @@ internal static class Program
         Run("Export preserves offsets, duration, stereo, and playback", Export);
         Run("Empty and disabled tracks do not create invalid playback", EmptyTracks);
         Run("Invalid ranges and malformed sample buffers are rejected", InvalidInputs);
-        Console.WriteLine(failures == 0 ? "All 19 regression checks passed." : $"{failures} regression checks failed.");
+        RunHistoryChecks();
+        Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }
 
     private static void Run(string name, Action check)
     {
+        checks++;
         try { check(); Console.WriteLine("PASS: " + name); }
         catch (Exception error) { failures++; Console.WriteLine("FAIL: " + name + " -- " + error.Message); }
     }
