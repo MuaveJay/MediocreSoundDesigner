@@ -74,9 +74,10 @@ public partial class Track : IDisposable
         PanDrawSamples = panDrawSamples;
     }
 
-    private void Changed()
+    private void Changed(bool audioChanged = true)
     {
         Revision++;
+        if (audioChanged) waveformRevision++;
         PanDrawSamples?.Invalidate();
     }
 
@@ -140,12 +141,14 @@ public partial class Track : IDisposable
         if (startFrame == frame)
             return;
         startFrame = frame;
-        Changed();
+        Changed(false);
     }
 
-    public void ShiftSampleOver(int pixels, int framesPerPixel)
+    public void ShiftSampleOver(int pixels, double framesPerPixel)
     {
-        MoveToFrame(Math.Max(0, checked(startFrame + (long)pixels * Math.Max(1, framesPerPixel))));
+        long delta = (long)Math.Round(pixels * ZoomScale.Sanitize(framesPerPixel), MidpointRounding.AwayFromZero);
+        if (pixels != 0 && delta == 0) delta = Math.Sign(pixels);
+        MoveToFrame(Math.Max(0, checked(startFrame + delta)));
     }
 
     public void Normalize()
@@ -291,7 +294,7 @@ public partial class Track : IDisposable
         if (Volume == newVolume)
             return;
         Volume = newVolume;
-        Changed();
+        Changed(false);
     }
 
     public void ChangeVolume(float newVolume)
@@ -454,7 +457,7 @@ public partial class Track : IDisposable
             return;
         }
         IsDisabled = !IsDisabled;
-        Changed();
+        Changed(false);
     }
 
     public void SaveToFile(string path)
@@ -466,41 +469,11 @@ public partial class Track : IDisposable
         writer.WriteSamples(audio, 0, audio.Length);
     }
 
-    public void DrawSamples(Graphics graphics, int framesPerPixel)
-    {
-        if (PanDrawSamples is null || samples.Length == 0)
-            return;
-        framesPerPixel = Math.Max(1, framesPerPixel);
-        long firstPixel = startFrame / framesPerPixel;
-        int visiblePixels = PanDrawSamples.ClientSize.Width;
-        if (firstPixel >= visiblePixels)
-            return;
-        float center = PanDrawSamples.ClientSize.Height / 2.0f;
-        using Pen pen = new(IsDisabled ? Settings.Color.TrackSamples_Disabled : Settings.Color.TrackSamples_Enabled);
-        int sourceFrames = samples.Length / channels;
-        for (int x = (int)firstPixel; x < visiblePixels; x++)
-        {
-            double projectFrame = (long)x * framesPerPixel - startFrame;
-            int frame = (int)Math.Max(0, Math.Round(projectFrame * sampleRate / AudioData.SampleRate));
-            if (frame >= sourceFrames)
-                break;
-            float minimum = 0;
-            float maximum = 0;
-            for (int channel = 0; channel < channels; channel++)
-            {
-                float value = samples[frame * channels + channel] * Volume;
-                minimum = Math.Min(minimum, value);
-                maximum = Math.Max(maximum, value);
-            }
-            graphics.DrawLine(pen, x, center - Math.Clamp(maximum, -1, 1) * center,
-                                   x, center - Math.Clamp(minimum, -1, 1) * center);
-        }
-    }
-
     public void Dispose()
     {
         outputDevice?.Dispose();
         outputDevice = null;
         playbackAudio = null;
+        waveformPeaks = null;
     }
 }

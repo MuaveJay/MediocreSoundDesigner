@@ -80,9 +80,10 @@ public partial class FrmMain : Form
         SetupTrimControls();
         SetupTrackSelection();
         SetupSelectedVolume();
+        SetupWaveformView();
 
         btnPlay.BackgroundImage = Resources.play;
-        trackManager.DrawTimescale = trkDrawTimescale.Value;
+        trackManager.DrawTimescale = ZoomScale.FromSlider(trkDrawTimescale.Value);
         UpdateSizes();
         ApplySettings();
     }
@@ -331,9 +332,7 @@ public partial class FrmMain : Form
 
     private void trkDrawTimescale_Scroll(object sender, EventArgs e)
     {
-        trackManager.DrawTimescale = trkDrawTimescale.Maximum - trkDrawTimescale.Value;
-        trackManager.RedrawAll();
-        UpdateTransportControls();
+        ZoomToScale(ZoomScale.FromSlider(trkDrawTimescale.Value), ZoomAnchorPixel());
     }
 
     // Helper methods
@@ -376,7 +375,7 @@ public partial class FrmMain : Form
 
     private Panel CreateTrackPanel(Track track)
     {
-        Panel pan = new()
+        WaveformCanvas pan = new()
         {
             BackColor = Settings.Color.TrackBg_Unselected,
             Width = panTracks.Width,
@@ -392,6 +391,7 @@ public partial class FrmMain : Form
         };
         pan.Tag = track;
         BindTimelineInput(pan);
+        pan.WheelZoom += Waveform_Wheel;
         pan.MouseDoubleClick += (sender, e) =>
         {
             if (e.Button != MouseButtons.Left)
@@ -401,8 +401,9 @@ public partial class FrmMain : Form
         };
         pan.Paint += (sender, e) =>
         {
-            track.DrawSamples(e.Graphics, trackManager.DrawTimescale);
+            track.DrawSamples(e.Graphics, trackManager.DrawTimescale, trackManager.ViewStartFrame);
             PaintRangeSelection(track, e.Graphics, pan.ClientSize);
+            PaintPlayhead(e.Graphics, pan.ClientSize);
             if (trackManager.IsTrackSelected(track))
             {
                 using Pen outline = new(track == trackManager.SelectedTrack ? Color.Gold : Settings.Color.Playline);
@@ -443,13 +444,14 @@ public partial class FrmMain : Form
         panTracks.Top = lblSelectionRange.Bottom + 3;
         panTracks.Width = width;
         panTracks.Height = Math.Max(100,
-            btnPlay.Top - panTracks.Top - PADDING);
+            btnPlay.Top - panTracks.Top - PADDING - SystemInformation.HorizontalScrollBarHeight - 4);
 
 
 
 
 
         LayoutTimelineTracks();
+        LayoutWaveformNavigation();
 
         btnPlay.BringToFront();
         LayoutTransportControls();

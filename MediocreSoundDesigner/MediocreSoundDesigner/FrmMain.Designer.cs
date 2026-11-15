@@ -1,4 +1,4 @@
-﻿namespace MediocreSoundDesigner
+namespace MediocreSoundDesigner
 {
     partial class FrmMain
     {
@@ -54,7 +54,7 @@
             menuGenGradientNoise = new ToolStripMenuItem();
             tmrUpdate = new System.Windows.Forms.Timer(components);
             sfdSaveFile = new SaveFileDialog();
-            trkDrawTimescale = new TrackBar();
+            trkDrawTimescale = new ZoomTrackBar();
             colorDialog = new ColorDialog();
             menuEditSplit = new ToolStripMenuItem();
             panTracks.SuspendLayout();

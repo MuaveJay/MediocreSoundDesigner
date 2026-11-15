@@ -86,3 +86,14 @@ absolute level to each. It is disabled with no selection. One mouse drag forms
 one Undo step, including all selected tracks; Escape cancels an active drag.
 Keyboard/wheel adjustments form individual edits. Waveforms and playing audio
 refresh during adjustment; paused audio rebuilds at its cursor on resume.
+
+
+Waveform view: exponential slider or mouse wheel over a waveform/ruler zooms;
+wheel over the zoom control anchors at the cursor when visible. Fit shows all
+tracks. The horizontal scrollbar navigates the zoomed timeline. Zoom spans
+overview to eight pixels per sample. Overview drawing queries cached min/max
+peaks; high zoom connects sample points and displays sample dots. Clip-edge
+markers distinguish an actual boundary from a quiet first/last sample. The shared
+playhead is painted on double-buffered waveforms rather than moved as an overlay
+window; repainting clears its old background. These tests use generated canvases,
+not screen captures. Hands-on reproduction of reported streaks remains pending.
