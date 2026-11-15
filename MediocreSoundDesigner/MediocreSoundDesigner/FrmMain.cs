@@ -76,6 +76,7 @@ public partial class FrmMain : Form
         menu.Items.Add(playbackMenu);
         SetupTransport(playbackMenu);
         SetupTimeline();
+        SetupSplitControls();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -349,6 +350,7 @@ public partial class FrmMain : Form
         pan.Click += (sender, e) =>
         {
             trackManager.SelectTrack(track);
+            UpdateSplitControls();
         };
         pan.Tag = track;
         BindTimelineInput(pan);
@@ -438,32 +440,6 @@ public partial class FrmMain : Form
             {
                 MessageBox.Show("Unable to trim the selected range.");
             }
-        }
-    }
-
-    private void menuEditSplit_Click(object sender, EventArgs e)
-    {
-        Track track = trackManager.SelectedTrack;
-
-        if (track is null)
-        {
-            return;
-        }
-
-        using FrmEditSplit frm = new();
-        frm.SetSound(track);
-
-        if (frm.ShowDialog() == DialogResult.OK)
-        {
-            Track secondTrack = trackManager.SplitTrack(track, frm.SplitSeconds);
-
-            if (secondTrack is null)
-            {
-                MessageBox.Show("Unable to split at that time.");
-                return;
-            }
-
-
         }
     }
 

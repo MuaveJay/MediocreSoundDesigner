@@ -93,6 +93,7 @@ public partial class FrmMain
                 Math.Round(frame * (double)trkPlaybackPosition.Maximum / duration), 0, trkPlaybackPosition.Maximum);
         lblPlaybackTime.Text = $"{FormatTimestamp(frame)} / {FormatTimestamp(duration)}";
         UpdateTimelineView();
+        UpdateSplitControls();
     }
 
     private void LayoutTransportControls()

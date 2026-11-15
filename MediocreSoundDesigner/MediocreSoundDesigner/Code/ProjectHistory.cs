@@ -158,13 +158,34 @@ public partial class TrackManager
         });
     }
 
+    public bool CanSplitTrackAtFrame(Track track, long projectFrame)
+        => track is not null && Tracks.Contains(track) &&
+           projectFrame > track.StartFrame && projectFrame < track.EndFrame;
+
+    public bool CanSplitAtPlayhead => CanSplitTrackAtFrame(SelectedTrack, GetPlayheadFrame());
+
+    public Track SplitAtPlayhead()
+    {
+        long frame = GetPlayheadFrame();
+        return SplitTrackAtFrame(SelectedTrack, frame);
+    }
+
     public Track SplitTrack(Track track, double seconds)
     {
-        if (track is null || !Tracks.Contains(track))
+        if (track is null || !Tracks.Contains(track) || !double.IsFinite(seconds) ||
+            seconds <= 0 || seconds >= track.DurationSeconds)
+            return null;
+        long localFrame = (long)Math.Round(seconds * AudioData.SampleRate, MidpointRounding.AwayFromZero);
+        return SplitTrackAtFrame(track, checked(track.StartFrame + localFrame));
+    }
+
+    public Track SplitTrackAtFrame(Track track, long projectFrame)
+    {
+        if (!CanSplitTrackAtFrame(track, projectFrame))
             return null;
         return ExecuteEdit(() =>
         {
-            Track second = track.Split(seconds);
+            Track second = track.SplitAtFrame(projectFrame - track.StartFrame);
             if (second is null)
                 return null;
             AddTrack(second);

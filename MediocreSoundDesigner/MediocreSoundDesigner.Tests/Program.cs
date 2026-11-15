@@ -31,6 +31,7 @@ internal static partial class Program
         RunHistoryChecks();
         RunTransportChecks();
         RunTimelineChecks();
+        RunPlayheadSplitChecks();
         Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }
