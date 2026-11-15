@@ -29,6 +29,7 @@ public partial class Track : IDisposable
 
     public bool IsDisabled { get; private set; }
     public Panel PanDrawSamples { get; private set; }
+    public Control TrackHeader { get; internal set; }
     public float Volume { get; private set; } = 1.0f;
     public int SampleRate => sampleRate;
     public int Channels => channels;

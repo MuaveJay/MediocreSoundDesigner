@@ -38,7 +38,7 @@ public partial class FrmMain
         Track track = trackManager.SelectedTrack;
         menuEditTrimAtTimes.Enabled = track is not null && trackManager.Tracks.Contains(track) && track.TimelineFrameCount > 0;
         TimelineSelection range = trackManager.RangeSelection;
-        lblSelectionRange.Text = range is null ? "Selection: drag over a waveform to keep a range."
+        lblSelectionRange.Text = range is null ? TrackSelectionSummary()
             : $"Keep {FormatTimestamp(range.StartFrame)} to {FormatTimestamp(range.EndFrame)}   |   Duration {FormatTimestamp(range.DurationFrames)}";
     }
 

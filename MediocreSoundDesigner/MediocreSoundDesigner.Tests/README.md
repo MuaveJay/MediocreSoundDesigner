@@ -68,3 +68,13 @@ the old range; Undo/Redo of an audio edit restores its associated range.
 Right-drag still seeks. Ctrl+Shift+T (Trim at Times...) keeps optional numeric
 track-relative input. Visual trim checks use exact integer frames and hidden
 forms with synthetic mouse events; no screen/audio capture or playback occurs.
+
+
+Track headers support click (one track), Ctrl-click (toggle), Shift-click
+(contiguous range), and Ctrl+Shift-click (add a range). Ctrl+A selects all tracks;
+Ctrl+Shift+A deselects. Selected rows are outlined, and the active row is marked
+in gold and labeled active. Split/trim/effects and Copy Active Track use that
+active track. Delete confirms the number of selected tracks and removes them as
+one Undo step. Right-drag timeline seeking and zoom preserve a multiple selection.
+Left-drag waveform range selection deliberately selects one track. Selection
+membership, active track, and Shift anchor restore with project edit Undo/Redo.

@@ -80,6 +80,7 @@ internal static partial class Program
         form.GetType().GetField("trackManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(form, manager);
         manager.ProjectChanged += (_, _) => InvokeTimeline(form, "RefreshTrackPanels");
         manager.RangeSelectionChanged += (_, _) => { manager.RedrawAll(); InvokeTimeline(form, "UpdateTrimControls"); };
+        manager.TrackSelectionChanged += (_, _) => InvokeTimeline(form, "UpdateTransportControls");
         try
         {
             form.ClientSize = new Size(1000, 700);
