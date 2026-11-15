@@ -79,7 +79,7 @@ public partial class TrackManager
         {
             Track track = Tracks[index];
             bool selected = IsTrackSelected(track);
-            Color background = selected ? Settings.Color.TrackBg_Selected : Settings.Color.TrackBg_Unselected;
+            Color background = TrackVisuals.Background(track, selected);
             if (track.PanDrawSamples is not null)
             {
                 track.PanDrawSamples.BorderStyle = BorderStyle.None;
@@ -89,10 +89,10 @@ public partial class TrackManager
             if (track.TrackHeader is not null)
             {
                 string active = track == SelectedTrack ? " (active)" : "";
-                track.TrackHeader.Text = $"Track {index + 1}{active}";
+                track.TrackHeader.Text = track.Name + active + (track.IsDisabled ? " [muted]" : "");
                 track.TrackHeader.AccessibleName = track.TrackHeader.Text + (selected ? ", selected" : ", unselected");
                 track.TrackHeader.BackColor = background;
-                track.TrackHeader.ForeColor = Settings.Color.WinFg;
+                track.TrackHeader.ForeColor = TrackVisuals.Readable(Settings.Color.WinFg, background);
                 track.TrackHeader.Invalidate();
             }
         }

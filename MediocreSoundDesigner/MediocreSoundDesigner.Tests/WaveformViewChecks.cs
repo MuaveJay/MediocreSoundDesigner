@@ -73,7 +73,7 @@ internal static partial class Program
 
     private static Bitmap RenderTrack(Track track, double scale, double origin = 0, int width = 400, int height = 80)
     {
-        using Panel panel = new() { Size = new Size(width, height) }; track.LinkPanels(panel, panel);
+        using Panel panel = new() { Size = new Size(width, height), BackColor = Color.Black }; track.LinkPanels(panel, panel);
         Bitmap bitmap = new(width, height);
         using Graphics graphics = Graphics.FromImage(bitmap); graphics.Clear(Color.Black);
         track.DrawSamples(graphics, scale, origin);

@@ -24,8 +24,8 @@ public partial class Track : IDisposable
     private long playbackAudioRevision = -1;
     private long startFrame;
 
-    private readonly Stack<(float[] Samples, float Volume, long StartFrame)> undoHistory = new();
-    private readonly Stack<(float[] Samples, float Volume, long StartFrame)> redoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor)> undoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor)> redoHistory = new();
 
     public bool IsDisabled { get; private set; }
     public Panel PanDrawSamples { get; private set; }
@@ -34,6 +34,7 @@ public partial class Track : IDisposable
     public int SampleRate => sampleRate;
     public int Channels => channels;
     public long Revision { get; private set; }
+    public long MixRevision { get; private set; }
     public long StartFrame => startFrame;
     public double StartSeconds => startFrame / (double)AudioData.SampleRate;
     public double DurationSeconds => samples.Length / (double)(sampleRate * channels);
@@ -44,6 +45,7 @@ public partial class Track : IDisposable
 
     public Track(string file)
     {
+        SetInitialName(Path.GetFileNameWithoutExtension(file));
         using AudioFileReader reader = new(file);
         AudioData.Validate(Array.Empty<float>(), reader.WaveFormat.SampleRate, reader.WaveFormat.Channels);
         samples = AudioData.ToMixFormat(AudioData.ReadAll(reader),
@@ -59,13 +61,16 @@ public partial class Track : IDisposable
         this.playbackFactory = playbackFactory ?? (() => new WaveOut());
     }
 
-    public Track Duplicate()
+    public Track Duplicate(bool preserveIdentity = false)
     {
         return new Track(samples, sampleRate, channels, playbackFactory)
         {
             Volume = this.Volume,
             startFrame = this.startFrame,
-            IsDisabled = this.IsDisabled
+            IsDisabled = this.IsDisabled,
+            Name = preserveIdentity ? Name : NameWithSuffix(Name, " Copy"),
+            TrackColor = TrackColor,
+            needsDefaultName = false
         };
     }
 
@@ -74,9 +79,10 @@ public partial class Track : IDisposable
         PanDrawSamples = panDrawSamples;
     }
 
-    private void Changed(bool audioChanged = true)
+    private void Changed(bool audioChanged = true, bool mixChanged = true)
     {
         Revision++;
+        if (mixChanged) MixRevision++;
         if (audioChanged) waveformRevision++;
         PanDrawSamples?.Invalidate();
     }
@@ -85,7 +91,7 @@ public partial class Track : IDisposable
     {
         if (HistoryOwner is not null)
             return;
-        undoHistory.Push((CloneSamples(), Volume, startFrame));
+        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
         redoHistory.Clear();
     }
 
@@ -95,9 +101,9 @@ public partial class Track : IDisposable
             return HistoryOwner.Undo();
         if (undoHistory.Count == 0)
             return false;
-        redoHistory.Push((CloneSamples(), Volume, startFrame));
+        redoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
         var previous = undoHistory.Pop();
-        (samples, Volume, startFrame) = previous;
+        (samples, Volume, startFrame, Name, TrackColor) = previous;
         Changed();
         return true;
     }
@@ -108,9 +114,9 @@ public partial class Track : IDisposable
             return HistoryOwner.Redo();
         if (redoHistory.Count == 0)
             return false;
-        undoHistory.Push((CloneSamples(), Volume, startFrame));
+        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
         var next = redoHistory.Pop();
-        (samples, Volume, startFrame) = next;
+        (samples, Volume, startFrame, Name, TrackColor) = next;
         Changed();
         return true;
     }
@@ -273,7 +279,8 @@ public partial class Track : IDisposable
         if (NeedsProjectEdit)
             return HistoryOwner.SplitTrackAtFrame(this, checked(startFrame + localFrame));
         int splitIndex = checked((int)(localFrame * channels));
-        Track second = Duplicate();
+        Track second = Duplicate(preserveIdentity: true);
+        second.Name = NameWithSuffix(Name, " Split");
         second.ReplaceSamples(samples[splitIndex..]);
         second.MoveToFrame(checked(startFrame + localFrame));
         SaveState();
@@ -403,10 +410,10 @@ public partial class Track : IDisposable
         outputDevice = null;
         // Scrubbing opens a new stream at another offset in the same immutable
         // snapshot, without copying the entire mix for every mouse movement.
-        if (playbackAudio is null || playbackAudioRevision != Revision)
+        if (playbackAudio is null || playbackAudioRevision != MixRevision)
         {
             playbackAudio = GetAdjustedSamples();
-            playbackAudioRevision = Revision;
+            playbackAudioRevision = MixRevision;
         }
         float[] audio = playbackAudio;
         playbackLengthFrames = audio.Length / AudioData.Channels;

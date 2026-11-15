@@ -98,7 +98,7 @@ public partial class Track
         int right = Math.Clamp((int)Math.Ceiling(graphics.ClipBounds.Right), 0, width);
         if (clipStart > right || clipEnd < left)
             return;
-        Color color = IsDisabled ? Settings.Color.TrackSamples_Disabled : Settings.Color.TrackSamples_Enabled;
+        Color color = TrackVisuals.Waveform(this);
         float center = height / 2f;
         float Y(float value) => center - Math.Clamp(float.IsFinite(value) ? value : 0, -1, 1) * Math.Max(0, center - 2);
         using Pen pen = new(color);

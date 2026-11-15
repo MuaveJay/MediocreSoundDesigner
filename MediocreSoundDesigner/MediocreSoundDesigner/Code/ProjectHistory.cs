@@ -11,6 +11,7 @@ public partial class TrackManager
     private readonly HashSet<Track> ownedTracks = new();
     private readonly Dictionary<Track, (long Revision, Track.EditState State)> capturedTracks = new();
     private int editDepth;
+    private int trackSequence;
     private bool restoringHistory;
 
     public bool CanUndo => undoHistory.Count > 0;
@@ -25,6 +26,8 @@ public partial class TrackManager
             throw new InvalidOperationException("This track already belongs to another project.");
         if (ownedTracks.Add(track))
         {
+            int number = ++trackSequence;
+            track.InitializeIdentity(number, TrackVisuals.DefaultColor(number - 1));
             track.ClearLocalHistory();
             track.HistoryOwner = this;
         }
@@ -59,7 +62,8 @@ public partial class TrackManager
             if (ReferenceEquals(before.State, after.State))
                 continue;
             if (before.State.Volume != after.State.Volume || before.State.StartFrame != after.State.StartFrame ||
-                before.State.IsDisabled != after.State.IsDisabled ||
+                before.State.IsDisabled != after.State.IsDisabled || before.State.Name != after.State.Name ||
+                before.State.TrackColor.ToArgb() != after.State.TrackColor.ToArgb() ||
                 !before.State.Samples.AsSpan().SequenceEqual(after.State.Samples))
                 return false;
         }
@@ -245,20 +249,24 @@ public partial class TrackManager
 
 public partial class Track
 {
-    internal sealed record EditState(float[] Samples, float Volume, long StartFrame, bool IsDisabled);
+    internal sealed record EditState(float[] Samples, float Volume, long StartFrame, bool IsDisabled, string Name, Color TrackColor);
     internal TrackManager HistoryOwner { get; set; }
     private bool NeedsProjectEdit => HistoryOwner is not null && !HistoryOwner.IsEditing;
 
-    internal EditState CaptureEditState() => new(CloneSamples(), Volume, startFrame, IsDisabled);
+    internal EditState CaptureEditState() => new(CloneSamples(), Volume, startFrame, IsDisabled, Name, TrackColor);
 
     internal void RestoreEditState(EditState state)
     {
+        bool audioChanged = !samples.AsSpan().SequenceEqual(state.Samples);
+        bool mixChanged = audioChanged || Volume != state.Volume || startFrame != state.StartFrame || IsDisabled != state.IsDisabled;
         samples = (float[])state.Samples.Clone();
         Volume = state.Volume;
         startFrame = state.StartFrame;
         IsDisabled = state.IsDisabled;
+        Name = state.Name;
+        TrackColor = state.TrackColor;
         ClearLocalHistory();
-        Changed();
+        Changed(audioChanged, mixChanged);
     }
 
     internal void ClearLocalHistory()

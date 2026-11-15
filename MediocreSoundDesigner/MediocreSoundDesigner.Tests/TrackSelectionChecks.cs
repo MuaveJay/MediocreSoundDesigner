@@ -169,7 +169,7 @@ internal static partial class Program
             Pointer(first.TrackHeader, "OnMouseDown", MouseButtons.Left, 10);
             Assert(manager.IsTrackSelected(first), "Header click was not wired to selection.");
             manager.SelectTrack(first); manager.SelectTrackByClick(second, true, false);
-            Assert(first.TrackHeader.Text == "Track 1" && second.TrackHeader.Text.Contains("active") &&
+            Assert(first.TrackHeader.Text == first.Name && second.TrackHeader.Text.Contains("active") &&
                 (first.TrackHeader.AccessibleName?.Contains("selected") ?? false) && (second.TrackHeader.AccessibleName?.Contains("selected") ?? false), "Headers do not identify all selected tracks and their active member.");
             Assert(Field<Label>(form, "lblSelectionRange").Text.Contains("2 selected"), "Selection summary did not update.");
             Assert(first.PanDrawSamples.BorderStyle == BorderStyle.None && second.PanDrawSamples.BorderStyle == BorderStyle.None,

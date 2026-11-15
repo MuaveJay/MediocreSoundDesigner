@@ -97,3 +97,12 @@ markers distinguish an actual boundary from a quiet first/last sample. The share
 playhead is painted on double-buffered waveforms rather than moved as an overlay
 window; repainting clears its old background. These tests use generated canvases,
 not screen captures. Hands-on reproduction of reported streaks remains pending.
+
+
+Track identities: imported tracks use the filename; raw/generated/recorded tracks
+receive numbered defaults. Copies and split tails retain the source color and get
+a Copy/Split name suffix. Names/colors remain attached when rows are reordered.
+Double-click a header or press F2 to rename the active track; the header context
+menu offers Rename and Change Color. Metadata changes are undoable. Selected
+outlines and the active marker remain distinct from each track's color, and
+waveform/text colors are adjusted for readable contrast against the row.

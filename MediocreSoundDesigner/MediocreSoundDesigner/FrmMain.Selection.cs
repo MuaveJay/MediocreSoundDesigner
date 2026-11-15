@@ -42,6 +42,7 @@ public partial class FrmMain
                 e.Graphics.DrawRectangle(pen, 0, 0, Math.Max(0, header.Width - 1), Math.Max(0, header.Height - 1));
             }
         };
+        BindTrackIdentityHeader(track, header);
         track.TrackHeader = header;
         panTracks.Controls.Add(header);
     }
@@ -51,7 +52,6 @@ public partial class FrmMain
         int count = trackManager.SelectedTracks.Count;
         if (count == 0)
             return "No tracks selected. Click a track header to select.";
-        int index = trackManager.Tracks.ToList().IndexOf(trackManager.SelectedTrack) + 1;
-        return $"{count} selected | Active: Track {index} (split/trim/effects) | Ctrl/Shift-click headers to select.";
+        return $"{count} selected | Active: {trackManager.SelectedTrack.Name} (split/trim/effects) | Ctrl/Shift-click headers to select.";
     }
 }

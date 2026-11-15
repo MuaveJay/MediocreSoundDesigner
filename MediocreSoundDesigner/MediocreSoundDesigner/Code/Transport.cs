@@ -44,7 +44,7 @@ public partial class TrackManager
                     Track next = new(GetMixedSamples(), AudioData.SampleRate, AudioData.Channels, playbackFactory);
                     pseudoCombinedTrack?.Dispose();
                     pseudoCombinedTrack = next;
-                    mixedTracks = Tracks.Select(track => (track, track.Revision)).ToArray();
+                    mixedTracks = Tracks.Select(track => (track, track.MixRevision)).ToArray();
                 }
                 pseudoCombinedTrack.PlayFromFrame(playheadFrame);
             }
