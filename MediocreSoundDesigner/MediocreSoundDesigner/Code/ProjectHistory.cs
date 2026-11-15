@@ -3,7 +3,7 @@ namespace MediocreSoundDesigner;
 public partial class TrackManager
 {
     private sealed record TrackEntry(Track Track, Track.EditState State);
-    private sealed record ProjectState(TrackEntry[] Tracks, Track Selected, TimelineSelection Range);
+    private sealed record ProjectState(TrackEntry[] Tracks, Track Selected, TimelineSelection Range, Track[] Selection, Track Anchor);
     private sealed record EditEntry(ProjectState Before, ProjectState After);
 
     private readonly Stack<EditEntry> undoHistory = new();
@@ -43,7 +43,7 @@ public partial class TrackManager
             }
             entries[i] = new(track, captured.State);
         }
-        return new(entries, Tracks.Contains(SelectedTrack) ? SelectedTrack : null, ValidateRange(RangeSelection));
+        return new(entries, Tracks.Contains(SelectedTrack) ? SelectedTrack : null, ValidateRange(RangeSelection), SelectedTracks.ToArray(), selectionAnchor);
     }
 
     private static bool SameContent(ProjectState left, ProjectState right)
@@ -79,7 +79,7 @@ public partial class TrackManager
                 tracks.Add(entry.Track);
                 capturedTracks[entry.Track] = (entry.Track.Revision, entry.State);
             }
-            SelectTrack(state.Selected);
+            ApplyTrackSelection(state.Selection, state.Selected, state.Anchor);
             RangeSelection = ValidateRange(state.Range);
         }
         finally { restoringHistory = false; }
@@ -101,6 +101,7 @@ public partial class TrackManager
         try
         {
             action();
+            ReconcileTrackSelection();
             RangeSelection = ValidateRange(RangeSelection);
             after = CaptureProject();
         }
@@ -225,11 +226,15 @@ public partial class TrackManager
         {
             track.HistoryOwner = null;
             track.PanDrawSamples?.Dispose();
+            track.TrackHeader?.Dispose();
             track.Dispose();
         }
         tracks.Clear();
         ownedTracks.Clear();
         RangeSelection = null;
+        selectedTracks.Clear();
+        SelectedTrack = null;
+        selectionAnchor = null;
         capturedTracks.Clear();
         undoHistory.Clear();
         redoHistory.Clear();

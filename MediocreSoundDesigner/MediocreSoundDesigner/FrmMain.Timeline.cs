@@ -45,7 +45,7 @@ public partial class FrmMain
             return;
         EndRangeDrag();
         EndTimelineDrag();
-        if (source.Tag is Track track)
+        if (source.Tag is Track track && trackManager.SelectedTracks.Count <= 1)
             trackManager.SelectTrack(track);
         timelineDragSource = source;
         timelineDragButton = e.Button;
@@ -121,16 +121,21 @@ public partial class FrmMain
         lblPlayhead.Visible = false;
         panTracks.AutoScrollPosition = Point.Empty;
         int count = trackManager.Tracks.Count;
-        int height = count == 0 ? 0 : Math.Max(80, panTracks.ClientSize.Height / count - 1);
+        int height = count == 0 ? 0 : Math.Max(104, panTracks.ClientSize.Height / count - 1);
+        int headerHeight = Math.Max(24, Font.Height + 6);
         int contentHeight = checked(count * height);
         foreach (Track track in trackManager.Tracks)
+        {
             track.PanDrawSamples.Width = 1;
+            track.TrackHeader.Width = 1;
+        }
         panTracks.AutoScrollMinSize = new Size(0, contentHeight);
         panTracks.PerformLayout();
         int top = 0;
         foreach (Track track in trackManager.Tracks)
         {
-            track.PanDrawSamples.SetBounds(0, top, panTracks.ClientSize.Width, height);
+            track.TrackHeader.SetBounds(0, top, panTracks.ClientSize.Width, headerHeight);
+            track.PanDrawSamples.SetBounds(0, top + headerHeight, panTracks.ClientSize.Width, height - headerHeight);
             track.PanDrawSamples.Invalidate();
             top += height;
         }

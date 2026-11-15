@@ -26,7 +26,7 @@ public partial class FrmMain : Form
         btnPlay.Parent = this;
         MinimumSize = new Size(650, 500);
         menuEdit.DropDownItems.Add(
-    new ToolStripMenuItem("Copy Track", null, (sender, e) =>
+    new ToolStripMenuItem("Copy Active Track", null, (sender, e) =>
     {
         if (trackManager.SelectedTrack is not null)
         {
@@ -78,6 +78,7 @@ public partial class FrmMain : Form
         SetupTimeline();
         SetupSplitControls();
         SetupTrimControls();
+        SetupTrackSelection();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -131,9 +132,9 @@ public partial class FrmMain : Form
             {
                 if (trackManager.SelectedTrack is not null)
                 {
-                    if (MessageBox.Show("Delete the selected track? You can undo this action.", "Are You Sure?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+                    if (MessageBox.Show($"Delete {trackManager.SelectedTracks.Count} selected track(s)? You can undo this action.", "Are You Sure?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation) == DialogResult.Yes)
                     {
-                        trackManager.RemTrack(trackManager.SelectedTrack);
+                        trackManager.RemoveSelectedTracks();
                         return true;
                     }
                 }
@@ -332,7 +333,7 @@ public partial class FrmMain : Form
             EndRangeDrag();
         if (timelineDragSource?.Tag is Track dragged && !trackManager.Tracks.Contains(dragged))
             EndTimelineDrag();
-        foreach (Panel panel in panTracks.Controls.OfType<Panel>().ToArray())
+        foreach (Control panel in panTracks.Controls.Cast<Control>().ToArray())
         {
             if (panel.Tag is Track track && !trackManager.Tracks.Contains(track))
                 panTracks.Controls.Remove(panel);
@@ -343,8 +344,12 @@ public partial class FrmMain : Form
                 CreateTrackPanel(track);
             else if (track.PanDrawSamples.Parent != panTracks)
                 panTracks.Controls.Add(track.PanDrawSamples);
+            if (track.TrackHeader is null || track.TrackHeader.IsDisposed)
+                CreateTrackHeader(track);
+            else if (track.TrackHeader.Parent != panTracks)
+                panTracks.Controls.Add(track.TrackHeader);
         }
-        trackManager.SelectTrack(trackManager.SelectedTrack);
+        trackManager.RefreshSelectionAppearance();
         menuEditUndo.Enabled = trackManager.CanUndo;
         menuEditRedo.Enabled = trackManager.CanRedo;
         UpdateSizes();
@@ -359,9 +364,10 @@ public partial class FrmMain : Form
             Left = 0,
             Top = 0,
         };
-        pan.Click += (sender, e) =>
+        pan.MouseClick += (sender, e) =>
         {
-            trackManager.SelectTrack(track);
+            if (e.Button == MouseButtons.Left)
+                trackManager.SelectTrack(track);
             UpdateSplitControls();
             UpdateTrimControls();
         };
@@ -378,14 +384,15 @@ public partial class FrmMain : Form
         {
             track.DrawSamples(e.Graphics, trackManager.DrawTimescale);
             PaintRangeSelection(track, e.Graphics, pan.ClientSize);
-            if (trackManager.SelectedTrack == track)
+            if (trackManager.IsTrackSelected(track))
             {
-                using Pen outline = new(Settings.Color.Playline);
+                using Pen outline = new(track == trackManager.SelectedTrack ? Color.Gold : Settings.Color.Playline);
                 e.Graphics.DrawRectangle(outline, 0, 0, Math.Max(0, pan.ClientSize.Width - 1), Math.Max(0, pan.ClientSize.Height - 1));
             }
         };
         panTracks.Controls.Add(pan);
         track.LinkPanels(pan, panTracks);
+        CreateTrackHeader(track);
 
         return pan;
     }

@@ -42,31 +42,8 @@ public partial class TrackManager : IDisposable
         ExecuteEdit(() =>
         {
             tracks.Remove(track);
-            if (SelectedTrack == track)
-                SelectTrack(Tracks.FirstOrDefault());
+            ReconcileTrackSelection();
         });
-    }
-
-    public void SelectTrack(Track track)
-    {
-        if (SelectedTrack != track)
-            ClearRangeSelection();
-        SelectedTrack = track;
-        foreach (Track item in Tracks)
-        {
-            if (item.PanDrawSamples is not null)
-            {
-                item.PanDrawSamples.BorderStyle = BorderStyle.None;
-                item.PanDrawSamples.BackColor = Settings.Color.TrackBg_Unselected;
-                item.PanDrawSamples.Invalidate();
-            }
-        }
-        if (track?.PanDrawSamples is not null)
-        {
-            track.PanDrawSamples.BorderStyle = BorderStyle.None;
-            track.PanDrawSamples.BackColor = Settings.Color.TrackBg_Selected;
-            track.PanDrawSamples.Invalidate();
-        }
     }
 
     public void RedrawAll()
@@ -77,7 +54,7 @@ public partial class TrackManager : IDisposable
 
     public void ApplySettings()
     {
-        SelectTrack(SelectedTrack);
+        RefreshSelectionAppearance();
         RedrawAll();
     }
 
