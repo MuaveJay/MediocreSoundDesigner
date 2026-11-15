@@ -30,7 +30,7 @@ public partial class FrmMain : Form
     {
         if (trackManager.SelectedTrack is not null)
         {
-            copiedTrack = trackManager.SelectedTrack.Duplicate();
+            copiedTrack = trackManager.SelectedTrack.Duplicate(preserveIdentity: true);
         }
     })
     {
@@ -106,6 +106,12 @@ public partial class FrmMain : Form
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (keyData == Keys.F2)
+        {
+            FinishVolumeGesture();
+            RenameTrack(trackManager.SelectedTrack);
+            return true;
+        }
         if (volumeGesture && keyData == Keys.Escape)
         {
             CancelVolumeGesture();
@@ -276,6 +282,7 @@ public partial class FrmMain : Form
     private void menuGenRecord_Click(object sender, EventArgs e)
     {
         Track newTrack = new(Array.Empty<float>());
+        newTrack.SetInitialName("Recording", numberOnAdd: true);
         using FrmGenRecord frm = new();
         frm.SetSound(newTrack);
         if (frm.ShowDialog() == DialogResult.OK)
@@ -294,6 +301,7 @@ public partial class FrmMain : Form
             samples[i] = rand.NextSingle() * 2.0f - 1.0f;
         }
         Track newTrack = new(samples);
+        newTrack.SetInitialName("Noise", numberOnAdd: true);
         AddTrackAndSelect(newTrack);
     }
     private void menuGenGradientNoise_Click(object sender, EventArgs e)
@@ -322,6 +330,7 @@ public partial class FrmMain : Form
             samples[i] = cur;
         }
         Track newTrack = new(samples);
+        newTrack.SetInitialName("Gradient Noise", numberOnAdd: true);
         AddTrackAndSelect(newTrack);
     }
 
