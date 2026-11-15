@@ -75,6 +75,7 @@ public partial class FrmMain : Form
         playbackMenu.DropDownItems.Add(loopItem);
         menu.Items.Add(playbackMenu);
         SetupTransport(playbackMenu);
+        SetupTimeline();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -88,6 +89,9 @@ public partial class FrmMain : Form
         lblPlayhead.BackColor = Settings.Color.Playline;
         lblPlaybackTime.ForeColor = Settings.Color.WinFg;
         trkPlaybackPosition.BackColor = Settings.Color.WinBg;
+        timelineRuler.BackColor = Settings.Color.WinBg;
+        timelineRuler.ForeColor = Settings.Color.WinFg;
+        timelineRuler.Invalidate();
         trackManager.ApplySettings();
     }
 
@@ -130,6 +134,7 @@ public partial class FrmMain : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        EndTimelineDrag();
         trackManager?.Dispose();
         base.OnFormClosed(e);
     }
@@ -312,6 +317,8 @@ public partial class FrmMain : Form
 
     private void RefreshTrackPanels()
     {
+        if (timelineDragSource?.Tag is Track dragged && !trackManager.Tracks.Contains(dragged))
+            EndTimelineDrag();
         foreach (Panel panel in panTracks.Controls.OfType<Panel>().ToArray())
         {
             if (panel.Tag is Track track && !trackManager.Tracks.Contains(track))
@@ -344,14 +351,22 @@ public partial class FrmMain : Form
             trackManager.SelectTrack(track);
         };
         pan.Tag = track;
-        pan.DoubleClick += (sender, e) =>
+        BindTimelineInput(pan);
+        pan.MouseDoubleClick += (sender, e) =>
         {
+            if (e.Button != MouseButtons.Left)
+                return;
             track.ToggleDisabled();
             track.PanDrawSamples.Invalidate();
         };
         pan.Paint += (sender, e) =>
         {
             track.DrawSamples(e.Graphics, trackManager.DrawTimescale);
+            if (trackManager.SelectedTrack == track)
+            {
+                using Pen outline = new(Settings.Color.Playline);
+                e.Graphics.DrawRectangle(outline, 0, 0, Math.Max(0, pan.ClientSize.Width - 1), Math.Max(0, pan.ClientSize.Height - 1));
+            }
         };
         panTracks.Controls.Add(pan);
         track.LinkPanels(pan, panTracks);
@@ -381,7 +396,8 @@ public partial class FrmMain : Form
 
         // Track area
         panTracks.Left = PADDING;
-        panTracks.Top = trkDrawTimescale.Bottom + PADDING;
+        LayoutTimelineRuler();
+        panTracks.Top = timelineRuler.Bottom;
         panTracks.Width = width;
         panTracks.Height = Math.Max(100,
             btnPlay.Top - panTracks.Top - PADDING);
@@ -390,25 +406,7 @@ public partial class FrmMain : Form
 
 
 
-        // Individual tracks
-        int top = 0;
-        int count = trackManager.Tracks.Count;
-
-        foreach (Track track in trackManager.Tracks)
-        {
-            track.PanDrawSamples.Left = 0;
-            track.PanDrawSamples.Width = panTracks.ClientSize.Width;
-            track.PanDrawSamples.Height = Math.Max(80,
-                panTracks.ClientSize.Height / count - 1);
-            track.PanDrawSamples.Top = top;
-
-            track.PanDrawSamples.Invalidate();
-            top += track.PanDrawSamples.Height;
-        }
-
-        // Playhead
-        lblPlayhead.Height = panTracks.ClientSize.Height;
-        lblPlayhead.BringToFront();
+        LayoutTimelineTracks();
 
         btnPlay.BringToFront();
         LayoutTransportControls();

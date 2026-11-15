@@ -56,12 +56,14 @@ public partial class TrackManager : IDisposable
             {
                 item.PanDrawSamples.BorderStyle = BorderStyle.None;
                 item.PanDrawSamples.BackColor = Settings.Color.TrackBg_Unselected;
+                item.PanDrawSamples.Invalidate();
             }
         }
         if (track?.PanDrawSamples is not null)
         {
-            track.PanDrawSamples.BorderStyle = BorderStyle.Fixed3D;
+            track.PanDrawSamples.BorderStyle = BorderStyle.None;
             track.PanDrawSamples.BackColor = Settings.Color.TrackBg_Selected;
+            track.PanDrawSamples.Invalidate();
         }
     }
 

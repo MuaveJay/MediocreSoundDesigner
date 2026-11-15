@@ -34,3 +34,17 @@ The bottom playback-position slider and time readout use the full mixed timeline
 the waveform zoom slider continues to control only the visible waveform scale.
 Space toggles Play/Pause. At natural completion the cursor stays at the end;
 explicit Play at the end starts another pass. Stop returns it to zero.
+
+
+The fixed timeline ruler displays sample-aligned timestamps above all waveforms.
+Click or drag the ruler with either mouse button, or right-click/right-drag a
+waveform or the playhead line, to seek. Left-clicking a waveform still selects
+its track. Seeking preserves the stopped/paused/playing state and clamps at the
+project boundaries. The ruler uses the waveform zoom scale; the bottom position
+slider spans the entire project. The selected track is outlined without shifting
+its client origin. Vertical scrolling leaves the ruler fixed.
+
+Timeline checks include pointer events on hidden forms, ruler tick/sample mapping,
+selection and scroll alignment, drag release/capture cancellation, and allocation
+bounds for repeated seeks. Any offscreen bitmap used to exercise custom painting
+is created from generated test data and is never a screen capture.

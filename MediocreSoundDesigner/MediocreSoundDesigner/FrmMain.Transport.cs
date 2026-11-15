@@ -75,14 +75,7 @@ public partial class FrmMain
         UpdateTransportControls();
     }
 
-    private static string FormatTimestamp(long frame)
-    {
-        long seconds = frame / AudioData.SampleRate;
-        long milliseconds = frame % AudioData.SampleRate * 1000 / AudioData.SampleRate;
-        return seconds >= 3600
-            ? $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}.{milliseconds:000}"
-            : $"{seconds / 60:00}:{seconds % 60:00}.{milliseconds:000}";
-    }
+    private static string FormatTimestamp(long frame) => TimelineScale.FormatTimestamp(frame);
 
     private void UpdateTransportControls()
     {
@@ -99,9 +92,7 @@ public partial class FrmMain
             trkPlaybackPosition.Value = duration == 0 ? 0 : (int)Math.Clamp(
                 Math.Round(frame * (double)trkPlaybackPosition.Maximum / duration), 0, trkPlaybackPosition.Maximum);
         lblPlaybackTime.Text = $"{FormatTimestamp(frame)} / {FormatTimestamp(duration)}";
-        long x = frame / trackManager.DrawTimescale;
-        lblPlayhead.Left = x < panTracks.ClientSize.Width ? (int)x : 0;
-        lblPlayhead.Visible = trackManager.Tracks.Count > 0 && x < panTracks.ClientSize.Width;
+        UpdateTimelineView();
     }
 
     private void LayoutTransportControls()
