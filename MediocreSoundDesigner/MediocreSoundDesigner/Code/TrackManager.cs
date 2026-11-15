@@ -7,15 +7,15 @@ public partial class TrackManager : IDisposable
     private Track pseudoCombinedTrack;
     private readonly Func<IWavePlayer> playbackFactory;
     private (Track Track, long Revision)[] mixedTracks = Array.Empty<(Track, long)>();
-    private int drawTimescale = 1;
+    private double drawTimescale = 1;
 
     private readonly List<Track> tracks = new();
     public IReadOnlyList<Track> Tracks => tracks;
     public Track SelectedTrack { get; private set; }
-    public int DrawTimescale
+    public double DrawTimescale
     {
         get => drawTimescale;
-        set => drawTimescale = Math.Max(1, value);
+        set => drawTimescale = ZoomScale.Sanitize(value);
     }
     public PlaybackState State => transportState == PlaybackState.Playing
         ? pseudoCombinedTrack?.State ?? PlaybackState.Stopped : transportState;

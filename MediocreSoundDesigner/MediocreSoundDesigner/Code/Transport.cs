@@ -99,7 +99,7 @@ public partial class TrackManager
         return Math.Clamp(frame, 0, DurationFrames);
     }
 
-    public int GetPlayheadPos() => (int)Math.Min(int.MaxValue, GetPlayheadFrame() / DrawTimescale);
+    public int GetPlayheadPos() => (int)Math.Clamp(Math.Floor(TimelineScale.PixelAtFrame(GetPlayheadFrame(), DrawTimescale, ViewStartFrame)), int.MinValue, int.MaxValue);
 
     /// <summary>Polls completion on the UI thread; explicit Stop and Seek never trigger looping.</summary>
     public void UpdatePlayback()

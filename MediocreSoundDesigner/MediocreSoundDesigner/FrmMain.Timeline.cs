@@ -102,7 +102,7 @@ public partial class FrmMain
                 x += source.Left;
             x -= panTracks.AutoScrollPosition.X;
         }
-        long frame = TimelineScale.FrameAtPixel(x, trackManager.DrawTimescale, trackManager.DurationFrames);
+        long frame = TimelineScale.FrameAtPixel(x, trackManager.DrawTimescale, trackManager.DurationFrames, trackManager.ViewStartFrame);
         if (frame == lastScrubFrame)
             return;
         lastScrubFrame = frame;
@@ -150,12 +150,15 @@ public partial class FrmMain
     {
         long frame = trackManager.GetPlayheadFrame();
         timelineRuler.FramesPerPixel = trackManager.DrawTimescale;
-        timelineRuler.DurationFrames = trackManager.DurationFrames;
+        timelineRuler.ViewStartFrame = trackManager.ViewStartFrame;
+        timelineRuler.DurationFrames = trackManager.TimelineExtentFrames;
         timelineRuler.PlayheadFrame = frame;
-        long x = frame / trackManager.DrawTimescale;
-        bool visible = trackManager.Tracks.Count > 0 && x <= panTracks.ClientSize.Width - lblPlayhead.Width;
-        lblPlayhead.Left = visible ? (int)x : 0;
+        int x = trackManager.GetPlayheadPos();
+        bool visible = trackManager.Tracks.Count > 0 && x >= 0 && x < panTracks.ClientSize.Width;
+        lblPlayhead.Left = visible ? x : 0;
         lblPlayhead.Top = panTracks.AutoScrollPosition.Y;
-        lblPlayhead.Visible = visible;
+        lblPlayhead.Visible = false;
+        InvalidatePlayhead(visible ? x : null);
+        UpdateHorizontalNavigation();
     }
 }

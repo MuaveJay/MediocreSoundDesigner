@@ -68,7 +68,7 @@ public partial class FrmMain
     private long RangeFrameAtPointer(Control source, int x, Track track)
     {
         long frame = TimelineScale.FrameAtPixel(x + source.Left - panTracks.AutoScrollPosition.X,
-            trackManager.DrawTimescale, long.MaxValue);
+            trackManager.DrawTimescale, long.MaxValue, trackManager.ViewStartFrame);
         return Math.Clamp(frame, track.StartFrame, track.EndFrame);
     }
 
@@ -124,8 +124,8 @@ public partial class FrmMain
         TimelineSelection range = trackManager.RangeSelection;
         if (range is null || range.Track != track)
             return;
-        double left = TimelineScale.PixelAtFrame(range.StartFrame, trackManager.DrawTimescale);
-        double right = TimelineScale.PixelAtFrame(range.EndFrame, trackManager.DrawTimescale);
+        double left = TimelineScale.PixelAtFrame(range.StartFrame, trackManager.DrawTimescale, trackManager.ViewStartFrame);
+        double right = TimelineScale.PixelAtFrame(range.EndFrame, trackManager.DrawTimescale, trackManager.ViewStartFrame);
         if (left >= size.Width || right <= 0)
             return;
         float x1 = (float)Math.Clamp(left, 0, size.Width);
