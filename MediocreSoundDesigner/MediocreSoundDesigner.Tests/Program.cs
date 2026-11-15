@@ -29,6 +29,7 @@ internal static partial class Program
         Run("Empty and disabled tracks do not create invalid playback", EmptyTracks);
         Run("Invalid ranges and malformed sample buffers are rejected", InvalidInputs);
         RunHistoryChecks();
+        RunTransportChecks();
         Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }

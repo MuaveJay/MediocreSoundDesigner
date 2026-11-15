@@ -17,7 +17,8 @@ public partial class TrackManager : IDisposable
         get => drawTimescale;
         set => drawTimescale = Math.Max(1, value);
     }
-    public PlaybackState State => pseudoCombinedTrack?.State ?? PlaybackState.Stopped;
+    public PlaybackState State => transportState == PlaybackState.Playing
+        ? pseudoCombinedTrack?.State ?? PlaybackState.Stopped : transportState;
     public bool LoopPlayback { get; set; }
 
     public TrackManager(Panel panContainer, Func<IWavePlayer> playbackFactory = null)
@@ -101,26 +102,6 @@ public partial class TrackManager : IDisposable
         using Track export = new(GetMixedSamples(), AudioData.SampleRate, AudioData.Channels);
         export.SaveToFile(filename);
     }
-
-    public void PlayAll()
-    {
-        bool resume = State == PlaybackState.Paused;
-        if (resume && MixIsCurrent)
-        {
-            pseudoCombinedTrack.Play();
-            return;
-        }
-        long position = resume ? pseudoCombinedTrack.GetPlayheadFrame() : 0;
-        Track next = new(GetMixedSamples(), AudioData.SampleRate, AudioData.Channels, playbackFactory);
-        pseudoCombinedTrack?.Dispose();
-        pseudoCombinedTrack = next;
-        mixedTracks = Tracks.Select(track => (track, track.Revision)).ToArray();
-        pseudoCombinedTrack.PlayFromFrame(position);
-    }
-
-    public void PauseAll() => pseudoCombinedTrack?.Pause();
-    public long GetPlayheadFrame() => pseudoCombinedTrack?.GetPlayheadFrame() ?? 0;
-    public int GetPlayheadPos() => (int)Math.Min(int.MaxValue, GetPlayheadFrame() / DrawTimescale);
 
     public void Dispose()
     {

@@ -8,7 +8,6 @@ public partial class FrmMain : Form
     // fields
     private TrackManager trackManager;
     private Track copiedTrack;
-    private bool wasPlaying = false;
     // ctor
     public FrmMain()
     {
@@ -75,6 +74,7 @@ public partial class FrmMain : Form
 
         playbackMenu.DropDownItems.Add(loopItem);
         menu.Items.Add(playbackMenu);
+        SetupTransport(playbackMenu);
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
@@ -86,12 +86,19 @@ public partial class FrmMain : Form
         BackColor = Settings.Color.WinBg;
         panTracks.BackColor = Settings.Color.TrackBg_Unselected;
         lblPlayhead.BackColor = Settings.Color.Playline;
+        lblPlaybackTime.ForeColor = Settings.Color.WinFg;
+        trkPlaybackPosition.BackColor = Settings.Color.WinBg;
         trackManager.ApplySettings();
     }
 
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (keyData == Keys.Space)
+        {
+            btnPlay_Click(this, EventArgs.Empty);
+            return true;
+        }
         if (trackManager.SelectedTrack is not null)
         {
             if (keyData == Keys.Left)
@@ -136,16 +143,13 @@ public partial class FrmMain : Form
 
     private void btnPlay_Click(object sender, EventArgs e)
     {
-        if (trackManager.State is NAudio.Wave.PlaybackState.Stopped or NAudio.Wave.PlaybackState.Paused)
+        RunPlaybackAction(() =>
         {
-            trackManager.PlayAll();
-            btnPlay.BackgroundImage = Resources.pause;
-        }
-        else
-        {
-            trackManager.PauseAll();
-            btnPlay.BackgroundImage = Resources.play;
-        }
+            if (trackManager.State == NAudio.Wave.PlaybackState.Playing)
+                trackManager.PauseAll();
+            else
+                trackManager.PlayAll();
+        });
     }
 
     private void menuFileOpen_Click(object sender, EventArgs e)
@@ -286,36 +290,14 @@ public partial class FrmMain : Form
 
     private void tmrUpdatePlaybackState_Tick(object sender, EventArgs e)
     {
-
-        if (trackManager.LoopPlayback &&
-            wasPlaying &&
-            trackManager.State == NAudio.Wave.PlaybackState.Stopped &&
-            trackManager.Tracks.Count > 0)
-        {
-            trackManager.PlayAll();
-        }
-
-        wasPlaying = trackManager.State == NAudio.Wave.PlaybackState.Playing;
-
-        if (trackManager.Tracks.Count > 0)
-        {
-            btnPlay.BackgroundImage = trackManager.State == NAudio.Wave.PlaybackState.Playing ? Resources.pause : Resources.play;
-            btnPlay.Visible = true;
-            lblPlayhead.Left = trackManager.GetPlayheadPos();
-            lblPlayhead.Visible = true;
-        }
-        else
-        {
-            btnPlay.BackgroundImage = null;
-            btnPlay.Visible = false;
-            lblPlayhead.Visible = false;
-        }
+        RunPlaybackAction(trackManager.UpdatePlayback);
     }
 
     private void trkDrawTimescale_Scroll(object sender, EventArgs e)
     {
         trackManager.DrawTimescale = trkDrawTimescale.Maximum - trkDrawTimescale.Value;
         trackManager.RedrawAll();
+        UpdateTransportControls();
     }
 
     // Helper methods
@@ -390,6 +372,13 @@ public partial class FrmMain : Form
         trkDrawTimescale.Width = width;
 
 
+        // Bottom transport position defines the available waveform height.
+        btnPlay.AutoSize = false;
+        btnPlay.Size = new Size(75, 75);
+        btnPlay.BackgroundImageLayout = ImageLayout.Zoom;
+        btnPlay.Left = PADDING;
+        btnPlay.Top = ClientSize.Height - btnPlay.Height - PADDING;
+
         // Track area
         panTracks.Left = PADDING;
         panTracks.Top = trkDrawTimescale.Bottom + PADDING;
@@ -398,12 +387,6 @@ public partial class FrmMain : Form
             btnPlay.Top - panTracks.Top - PADDING);
 
 
-        // Play button
-        btnPlay.AutoSize = false;
-        btnPlay.Size = new Size(75, 75);
-        btnPlay.BackgroundImageLayout = ImageLayout.Zoom;
-        btnPlay.Left = PADDING;
-        btnPlay.Top = ClientSize.Height - btnPlay.Height - PADDING;
 
 
 
@@ -428,6 +411,8 @@ public partial class FrmMain : Form
         lblPlayhead.BringToFront();
 
         btnPlay.BringToFront();
+        LayoutTransportControls();
+        UpdateTransportControls();
     }
 
 

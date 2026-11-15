@@ -25,3 +25,12 @@ Track edits attached to a project automatically join its history. Wrap a group
 of changes in `TrackManager.ExecuteEdit` to make it one Undo step. Add/remove and
 track ordering operations participate in the same project history. The optional
 `FrmEditMaster.EditExecutor` groups a dialog's Apply operation.
+
+
+Transport checks cover shared cursor position, stopped/paused/playing seeks,
+device reuse on unchanged resume, fresh audio after edits, natural completion,
+looping, explicit Stop, end/empty-project handling, and hidden-form control wiring.
+The bottom playback-position slider and time readout use the full mixed timeline;
+the waveform zoom slider continues to control only the visible waveform scale.
+Space toggles Play/Pause. At natural completion the cursor stays at the end;
+explicit Play at the end starts another pass. Stop returns it to zero.
