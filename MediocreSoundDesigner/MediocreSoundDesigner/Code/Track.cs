@@ -369,17 +369,26 @@ private void ApplyFade(bool fadeIn)
     }
 
 
-  // play
-  public void Play() {
-    outputDevice?.Dispose();
-    fileReader?.Dispose();
-    SaveToTempFile();
-    fileReader = new AudioFileReader(tempFilePath);
-    outputDevice = new WaveOut();
-    outputDevice.Init(fileReader);
-    outputDevice.Play();
-  }
-  public void Pause() {
+    // play
+
+    public void Play()
+    {
+        if (State == PlaybackState.Paused)
+        {
+            outputDevice.Play();
+            return;
+        }
+
+        outputDevice?.Dispose();
+        fileReader?.Dispose();
+        SaveToTempFile();
+        fileReader = new AudioFileReader(tempFilePath);
+        outputDevice = new WaveOut();
+        outputDevice.Init(fileReader);
+        outputDevice.Play();
+    }
+
+    public void Pause() {
     outputDevice?.Pause();
   }
   public void Reset() {

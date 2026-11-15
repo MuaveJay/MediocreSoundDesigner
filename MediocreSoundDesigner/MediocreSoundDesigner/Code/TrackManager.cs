@@ -17,8 +17,10 @@ public class TrackManager {
     }
 
     public PlaybackState State => pseudoCombinedTrack?.State ?? PlaybackState.Stopped;
+    public bool LoopPlayback { get; set; } = false;
 
-  public TrackManager(Panel panContainer) {
+
+    public TrackManager(Panel panContainer) {
 		Tracks = new();
     SelectedTrack = null;
     pseudoCombinedTrack = null;
@@ -64,11 +66,20 @@ public class TrackManager {
     pseudoCombinedTrack.SaveToFile(filename);
   }
 
-	public void PlayAll() {
-    CombineTracks();
-    pseudoCombinedTrack.Play();
-  }
-  private void CombineTracks() {
+
+    public void PlayAll()
+    {
+        if (State == PlaybackState.Paused)
+        {
+            pseudoCombinedTrack.Play();
+            return;
+        }
+
+        CombineTracks();
+        pseudoCombinedTrack.Play();
+    }
+
+    private void CombineTracks() {
     pseudoCombinedTrack?.Dispose();
     List<float> combinedSamples = new();
     foreach (Track track in Tracks) {

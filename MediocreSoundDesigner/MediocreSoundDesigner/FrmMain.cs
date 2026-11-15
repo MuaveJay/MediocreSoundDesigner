@@ -8,6 +8,7 @@ public partial class FrmMain : Form
     // fields
     private TrackManager trackManager;
     private Track copiedTrack;
+    private bool wasPlaying = false;
     // ctor
     public FrmMain()
     {
@@ -59,6 +60,22 @@ public partial class FrmMain : Form
         {
             trackManager.SelectedTrack?.FadeOut();
         });
+
+        ToolStripMenuItem playbackMenu = new("Playback");
+
+        ToolStripMenuItem loopItem = new("Loop Playback")
+        {
+            CheckOnClick = true
+        };
+
+        loopItem.CheckedChanged += (sender, e) =>
+        {
+            trackManager.LoopPlayback = loopItem.Checked;
+        };
+
+        playbackMenu.DropDownItems.Add(loopItem);
+        menu.Items.Add(playbackMenu);
+
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = trkDrawTimescale.Value;
         UpdateSizes();
@@ -270,6 +287,17 @@ public partial class FrmMain : Form
 
     private void tmrUpdatePlaybackState_Tick(object sender, EventArgs e)
     {
+
+        if (trackManager.LoopPlayback &&
+            wasPlaying &&
+            trackManager.State == NAudio.Wave.PlaybackState.Stopped &&
+            trackManager.Tracks.Count > 0)
+        {
+            trackManager.PlayAll();
+        }
+
+        wasPlaying = trackManager.State == NAudio.Wave.PlaybackState.Playing;
+
         if (trackManager.Tracks.Count > 0)
         {
             btnPlay.BackgroundImage = trackManager.State == NAudio.Wave.PlaybackState.Playing ? Resources.pause : Resources.play;
