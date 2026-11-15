@@ -78,3 +78,11 @@ active track. Delete confirms the number of selected tracks and removes them as
 one Undo step. Right-drag timeline seeking and zoom preserve a multiple selection.
 Left-drag waveform range selection deliberately selects one track. Selection
 membership, active track, and Shift anchor restore with project edit Undo/Redo.
+
+
+The bottom Volume slider sets only the selected tracks to 0-200 percent. Mixed
+means their current levels differ; moving the slider applies the displayed
+absolute level to each. It is disabled with no selection. One mouse drag forms
+one Undo step, including all selected tracks; Escape cancels an active drag.
+Keyboard/wheel adjustments form individual edits. Waveforms and playing audio
+refresh during adjustment; paused audio rebuilds at its cursor on resume.

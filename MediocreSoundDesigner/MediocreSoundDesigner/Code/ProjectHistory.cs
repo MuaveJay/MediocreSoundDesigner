@@ -232,6 +232,8 @@ public partial class TrackManager
         tracks.Clear();
         ownedTracks.Clear();
         RangeSelection = null;
+        editGroupBefore = null;
+        editDepth = 0;
         selectedTracks.Clear();
         SelectedTrack = null;
         selectionAnchor = null;
