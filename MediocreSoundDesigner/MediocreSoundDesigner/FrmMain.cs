@@ -96,13 +96,13 @@ public partial class FrmMain : Form
         {
             if (keyData == Keys.Left)
             {
-                trackManager.SelectedTrack.ShiftSampleOver(-5);
+                trackManager.SelectedTrack.ShiftSampleOver(-5, trackManager.DrawTimescale);
                 trackManager.SelectedTrack.PanDrawSamples.Invalidate();
                 return true;
             }
             else if (keyData == Keys.Right)
             {
-                trackManager.SelectedTrack.ShiftSampleOver(+5);
+                trackManager.SelectedTrack.ShiftSampleOver(+5, trackManager.DrawTimescale);
                 trackManager.SelectedTrack.PanDrawSamples.Invalidate();
                 return true;
             }
@@ -123,6 +123,12 @@ public partial class FrmMain : Form
             }
         }
         return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        trackManager?.Dispose();
+        base.OnFormClosed(e);
     }
 
     private void FrmMain_SizeChanged(object sender, EventArgs e)
@@ -151,11 +157,19 @@ public partial class FrmMain : Form
         ofdLoadFile.DefaultExt = "wav";
         if (ofdLoadFile.ShowDialog() == DialogResult.OK)
         {
-            Track newTrack = new(ofdLoadFile.FileName);
-            CreateTrackPanel(newTrack);
-            trackManager.AddTrack(newTrack);
-            UpdateSizes();
-            newTrack.PanDrawSamples.Invalidate();
+            try
+            {
+                Track newTrack = new(ofdLoadFile.FileName);
+                CreateTrackPanel(newTrack);
+                trackManager.AddTrack(newTrack);
+                UpdateSizes();
+                newTrack.PanDrawSamples.Invalidate();
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show($"Unable to open audio: {error.Message}", "Open Audio",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
     private void menuFileSave_Click(object sender, EventArgs e)

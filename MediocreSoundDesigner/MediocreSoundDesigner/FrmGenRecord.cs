@@ -20,7 +20,7 @@ public partial class FrmGenRecord : FrmEditMaster {
   }
 
   protected override void Apply() {
-    track.ReplaceSamples(recordedSamples.ToArray());
+    track.ReplaceSamples(AudioData.ToMixFormat(recordedSamples.ToArray(), 44100, 1));
   }
 
   private void btnRecord_Click(object sender, EventArgs e) {
