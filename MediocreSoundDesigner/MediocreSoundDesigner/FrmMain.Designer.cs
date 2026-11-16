@@ -288,7 +288,7 @@ namespace MediocreSoundDesigner
             Controls.Add(lblDebug);
             Controls.Add(panTracks);
             Controls.Add(menu);
-            FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            FormBorderStyle = FormBorderStyle.Sizable;
             KeyPreview = true;
             MainMenuStrip = menu;
             Margin = new Padding(5, 6, 5, 6);

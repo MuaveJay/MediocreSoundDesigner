@@ -108,3 +108,5 @@ outlines and the active marker remain distinct from each track's color, and
 waveform/text colors are adjusted for readable contrast against the row.
 
 Track reorder checks use hidden forms and synthetic handle gestures, with no screen capture. They cover drop preview, first/middle/last moves, stable identities/timing/selection, grouped history, no-op/cancel paths, edge autoscroll, and uninterrupted fake-device playback. Drag the :: grip at the left of a header; waveform left/right gestures retain their existing editing behavior.
+
+Window mode checks use hidden forms to verify standard window controls, F11 fullscreen state, repeated normal/maximized restoration, removed-monitor clamping, layout bounds, and fake-device playback preservation. Escape exits fullscreen. Native caption behavior and mixed-monitor DPI transitions still need hands-on verification.

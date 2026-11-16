@@ -82,6 +82,7 @@ public partial class FrmMain : Form
         SetupTrackReordering();
         SetupSelectedVolume();
         SetupWaveformView();
+        SetupWindowModes();
 
         btnPlay.BackgroundImage = Resources.play;
         trackManager.DrawTimescale = ZoomScale.FromSlider(trkDrawTimescale.Value);
@@ -107,6 +108,11 @@ public partial class FrmMain : Form
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (keyData == Keys.F11 || (fullscreen && keyData == Keys.Escape))
+        {
+            ToggleFullscreen();
+            return true;
+        }
         if (reorderSource is not null)
         {
             CancelTrackReorder();
