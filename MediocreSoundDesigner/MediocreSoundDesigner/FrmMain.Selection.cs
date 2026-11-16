@@ -43,6 +43,7 @@ public partial class FrmMain
             }
         };
         BindTrackIdentityHeader(track, header);
+        BindTrackReorderHandle(track, header);
         track.TrackHeader = header;
         panTracks.Controls.Add(header);
     }

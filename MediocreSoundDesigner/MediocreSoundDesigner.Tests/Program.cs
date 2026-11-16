@@ -37,6 +37,7 @@ internal static partial class Program
         RunSelectedVolumeChecks();
         RunWaveformViewChecks();
         RunTrackIdentityChecks();
+        RunTrackReorderChecks();
         Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }

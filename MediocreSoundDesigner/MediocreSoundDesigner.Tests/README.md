@@ -106,3 +106,5 @@ Double-click a header or press F2 to rename the active track; the header context
 menu offers Rename and Change Color. Metadata changes are undoable. Selected
 outlines and the active marker remain distinct from each track's color, and
 waveform/text colors are adjusted for readable contrast against the row.
+
+Track reorder checks use hidden forms and synthetic handle gestures, with no screen capture. They cover drop preview, first/middle/last moves, stable identities/timing/selection, grouped history, no-op/cancel paths, edge autoscroll, and uninterrupted fake-device playback. Drag the :: grip at the left of a header; waveform left/right gestures retain their existing editing behavior.
