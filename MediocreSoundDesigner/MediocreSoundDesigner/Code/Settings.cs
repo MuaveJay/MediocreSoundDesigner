@@ -20,12 +20,12 @@ public static class Settings {
     public Color Playline { get; set; }
 
     public Colors() {
-      WinBg = System.Drawing.Color.Black;
-      WinFg = System.Drawing.Color.White;
+      WinBg = System.Drawing.Color.FromArgb(20, 24, 32);
+      WinFg = System.Drawing.Color.FromArgb(229, 234, 242);
       TrackSamples_Enabled = System.Drawing.Color.Cyan;
       TrackSamples_Disabled = System.Drawing.Color.LightGray;
-      TrackBg_Unselected = System.Drawing.Color.DimGray;
-      TrackBg_Selected = System.Drawing.Color.Gray;
+      TrackBg_Unselected = System.Drawing.Color.FromArgb(27, 33, 43);
+      TrackBg_Selected = System.Drawing.Color.FromArgb(40, 49, 64);
       Playline = System.Drawing.Color.White;
     }
   }

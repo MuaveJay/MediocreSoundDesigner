@@ -105,10 +105,8 @@ public partial class FrmMain
 
     private void LayoutSelectedVolume()
     {
-        int width = Math.Min(220, Math.Max(170, ClientSize.Width / 4));
-        lblSelectedVolume.SetBounds(ClientSize.Width - width - 15, btnPlay.Top, width, Font.Height + 5);
-        trkSelectedVolume.SetBounds(lblSelectedVolume.Left - 4, lblSelectedVolume.Bottom + 4, width + 4, 40);
-        trkSelectedVolume.BringToFront();
-        lblSelectedVolume.BringToFront();
+        int width = Math.Min(Ui(240), Math.Max(Ui(180), ClientSize.Width / 4));
+        lblSelectedVolume.SetBounds(ClientSize.Width - width - Ui(12), btnPlay.Top, width, Font.Height + Ui(8));
+        trkSelectedVolume.SetBounds(lblSelectedVolume.Left - Ui(4), lblSelectedVolume.Bottom + Ui(2), width + Ui(4), Ui(30));
     }
 }

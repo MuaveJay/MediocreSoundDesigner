@@ -82,7 +82,8 @@ public partial class FrmMain
         long duration = trackManager.DurationFrames;
         long frame = trackManager.GetPlayheadFrame();
         bool playing = trackManager.State == PlaybackState.Playing;
-        btnPlay.BackgroundImage = playing ? Resources.pause : Resources.play;
+        btnPlay.BackgroundImage = null;
+        btnPlay.Text = playing ? "Pause" : "Play";
         btnPlay.AccessibleName = playing ? "Pause" : "Play";
         btnPlay.Enabled = duration > 0;
         btnPlay.Visible = true;
@@ -96,17 +97,11 @@ public partial class FrmMain
         UpdateSplitControls();
         UpdateTrimControls();
         UpdateSelectedVolumeControls();
+        UpdateEditorControls();
     }
 
     private void LayoutTransportControls()
     {
-        btnStop.SetBounds(btnPlay.Right + 12, btnPlay.Top, 70, btnPlay.Height);
-        lblPlaybackTime.Location = new Point(btnStop.Right + 12, btnPlay.Top);
-        LayoutSelectedVolume();
-        trkPlaybackPosition.SetBounds(btnStop.Right + 8, lblPlaybackTime.Bottom + 4,
-            Math.Max(100, trkSelectedVolume.Left - btnStop.Right - 20), 40);
-        btnStop.BringToFront();
-        trkPlaybackPosition.BringToFront();
-        lblPlaybackTime.BringToFront();
+        LayoutEditorTransport();
     }
 }
