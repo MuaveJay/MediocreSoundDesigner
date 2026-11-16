@@ -83,8 +83,9 @@ public partial class FrmMain : Form
         SetupSelectedVolume();
         SetupWaveformView();
         SetupWindowModes();
+        SetupEditorLayout();
 
-        btnPlay.BackgroundImage = Resources.play;
+        btnPlay.BackgroundImage = null;
         trackManager.DrawTimescale = ZoomScale.FromSlider(trkDrawTimescale.Value);
         UpdateSizes();
         ApplySettings();
@@ -103,6 +104,7 @@ public partial class FrmMain : Form
         trkSelectedVolume.BackColor = Settings.Color.WinBg;
         timelineRuler.Invalidate();
         trackManager.ApplySettings();
+        ApplyEditorTheme();
     }
 
     // GUI controls
@@ -443,41 +445,7 @@ public partial class FrmMain : Form
 
     private void UpdateSizes()
     {
-        const int PADDING = 15;
-
-        int width = Math.Max(100, ClientSize.Width - PADDING * 2);
-
-        // Zoom slider
-        trkDrawTimescale.Left = PADDING;
-        trkDrawTimescale.Top = menu.Bottom + PADDING;
-        trkDrawTimescale.Width = width;
-
-
-        // Bottom transport position defines the available waveform height.
-        btnPlay.AutoSize = false;
-        btnPlay.Size = new Size(75, 75);
-        btnPlay.BackgroundImageLayout = ImageLayout.Zoom;
-        btnPlay.Left = PADDING;
-        btnPlay.Top = ClientSize.Height - btnPlay.Height - PADDING;
-
-        // Track area
-        panTracks.Left = PADDING;
-        LayoutTimelineRuler();
-        LayoutRangeReadout();
-        panTracks.Top = lblSelectionRange.Bottom + 3;
-        panTracks.Width = width;
-        panTracks.Height = Math.Max(100,
-            btnPlay.Top - panTracks.Top - PADDING - SystemInformation.HorizontalScrollBarHeight - 4);
-
-
-
-
-
-        LayoutTimelineTracks();
-        LayoutWaveformNavigation();
-
-        btnPlay.BringToFront();
-        LayoutTransportControls();
+        LayoutEditor();
         UpdateTransportControls();
     }
 

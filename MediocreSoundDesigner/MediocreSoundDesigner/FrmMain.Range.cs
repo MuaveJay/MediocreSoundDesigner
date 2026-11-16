@@ -35,6 +35,7 @@ public partial class FrmMain
     private void UpdateTrimControls()
     {
         menuEditTrim.Enabled = trackManager.CanTrimSelection;
+        if (editorLayoutReady) btnTrimToolbar.Enabled = menuEditTrim.Enabled;
         Track track = trackManager.SelectedTrack;
         menuEditTrimAtTimes.Enabled = track is not null && trackManager.Tracks.Contains(track) && track.TimelineFrameCount > 0;
         TimelineSelection range = trackManager.RangeSelection;
@@ -44,8 +45,8 @@ public partial class FrmMain
 
     private void LayoutRangeReadout()
     {
-        lblSelectionRange.SetBounds(panTracks.Left, timelineRuler.Bottom + 3,
-            panTracks.ClientSize.Width, Font.Height + 5);
+        lblSelectionRange.SetBounds(panTracks.Left, timelineRuler.Bottom + Ui(3),
+            panTracks.ClientSize.Width, Font.Height + Ui(6));
     }
 
     private void Range_MouseDown(object sender, MouseEventArgs e)

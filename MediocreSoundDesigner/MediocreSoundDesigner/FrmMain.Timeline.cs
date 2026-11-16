@@ -111,8 +111,8 @@ public partial class FrmMain
 
     private void LayoutTimelineRuler()
     {
-        timelineRuler.SetBounds(panTracks.Left, trkDrawTimescale.Bottom + 8,
-            panTracks.ClientSize.Width, Math.Max(34, Font.Height + 18));
+        timelineRuler.SetBounds(panTracks.Left, trkDrawTimescale.Bottom + Ui(6),
+            panTracks.ClientSize.Width, Math.Max(Ui(34), Font.Height + Ui(18)));
     }
 
     private void LayoutTimelineTracks()
@@ -121,8 +121,8 @@ public partial class FrmMain
         lblPlayhead.Visible = false;
         panTracks.AutoScrollPosition = Point.Empty;
         int count = trackManager.Tracks.Count;
-        int height = count == 0 ? 0 : Math.Max(104, panTracks.ClientSize.Height / count - 1);
-        int headerHeight = Math.Max(24, Font.Height + 6);
+        int height = count == 0 ? 0 : Math.Max(Ui(120), panTracks.ClientSize.Height / count - 1);
+        int headerHeight = Math.Max(Ui(28), Font.Height + Ui(8));
         int contentHeight = checked(count * height);
         foreach (Track track in trackManager.Tracks)
         {

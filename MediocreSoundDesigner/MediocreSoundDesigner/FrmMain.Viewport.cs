@@ -82,8 +82,6 @@ public partial class FrmMain
 
     private void LayoutWaveformNavigation()
     {
-        btnFitWaveform.SetBounds(ClientSize.Width - 70, trkDrawTimescale.Top, 55, Math.Min(30, trkDrawTimescale.Height));
-        trkDrawTimescale.Width = Math.Max(100, btnFitWaveform.Left - trkDrawTimescale.Left - 10);
         scrTimeline.SetBounds(panTracks.Left, panTracks.Bottom + 4, panTracks.ClientSize.Width, SystemInformation.HorizontalScrollBarHeight);
         trackManager.SetViewport(trackManager.ViewStartFrame, trackManager.DrawTimescale, panTracks.ClientSize.Width);
         btnFitWaveform.BringToFront();

@@ -110,3 +110,5 @@ waveform/text colors are adjusted for readable contrast against the row.
 Track reorder checks use hidden forms and synthetic handle gestures, with no screen capture. They cover drop preview, first/middle/last moves, stable identities/timing/selection, grouped history, no-op/cancel paths, edge autoscroll, and uninterrupted fake-device playback. Drag the :: grip at the left of a header; waveform left/right gestures retain their existing editing behavior.
 
 Window mode checks use hidden forms to verify standard window controls, F11 fullscreen state, repeated normal/maximized restoration, removed-monitor clamping, layout bounds, and fake-device playback preservation. Escape exits fullscreen. Native caption behavior and mixed-monitor DPI transitions still need hands-on verification.
+
+Editor layout checks verify toolbar routing/state, separate navigation/track/transport areas, minimum and large windows, larger fonts, scroll isolation, theme contrast, empty state and fake-device transport. A generated hidden-control bitmap is rendered for layout inspection without screen capture. See ../EDITOR_GUIDE.md for controls and hands-on verification.
