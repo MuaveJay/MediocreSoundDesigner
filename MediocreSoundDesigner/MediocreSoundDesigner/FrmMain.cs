@@ -62,7 +62,7 @@ public partial class FrmMain : Form
 
         ToolStripMenuItem playbackMenu = new("Playback");
 
-        ToolStripMenuItem loopItem = new("Loop Playback")
+        loopItem = new("Loop Playback")
         {
             CheckOnClick = true
         };
@@ -70,6 +70,7 @@ public partial class FrmMain : Form
         loopItem.CheckedChanged += (sender, e) =>
         {
             trackManager.LoopPlayback = loopItem.Checked;
+            UpdateProjectCaption();
         };
 
         playbackMenu.DropDownItems.Add(loopItem);
@@ -86,6 +87,7 @@ public partial class FrmMain : Form
         SetupPlayheadFollowing();
         SetupShortcutHelp();
         SetupEditorLayout();
+        SetupProjectFiles();
 
         btnPlay.BackgroundImage = null;
         trackManager.DrawTimescale = ZoomScale.FromSlider(trkDrawTimescale.Value);
@@ -215,6 +217,7 @@ public partial class FrmMain : Form
 
     private void menuFileOpen_Click(object sender, EventArgs e)
     {
+        ofdLoadFile.Title = "Import Audio";
         ofdLoadFile.DefaultExt = "wav";
         if (ofdLoadFile.ShowDialog() == DialogResult.OK)
         {
@@ -232,6 +235,8 @@ public partial class FrmMain : Form
     }
     private void menuFileSave_Click(object sender, EventArgs e)
     {
+        sfdSaveFile.Title = "Export Audio";
+        sfdSaveFile.Filter = "Wave Audio (*.wav)|*.wav";
         sfdSaveFile.DefaultExt = "wav";
         if (sfdSaveFile.ShowDialog() == DialogResult.OK)
         {
@@ -408,6 +413,7 @@ public partial class FrmMain : Form
         menuEditUndo.Enabled = trackManager.CanUndo;
         menuEditRedo.Enabled = trackManager.CanRedo;
         UpdateSizes();
+        UpdateProjectCaption();
     }
 
     private Panel CreateTrackPanel(Track track)

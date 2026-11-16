@@ -44,6 +44,7 @@ internal static partial class Program
         RunShortcutHelpChecks();
         RunReportedRenderingChecks();
         RunPlayheadFollowChecks();
+        RunProjectFileChecks();
         Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }
