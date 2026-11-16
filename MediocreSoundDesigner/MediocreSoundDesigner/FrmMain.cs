@@ -79,6 +79,7 @@ public partial class FrmMain : Form
         SetupSplitControls();
         SetupTrimControls();
         SetupTrackSelection();
+        SetupTrackReordering();
         SetupSelectedVolume();
         SetupWaveformView();
 
@@ -106,6 +107,11 @@ public partial class FrmMain : Form
     // GUI controls
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (reorderSource is not null)
+        {
+            CancelTrackReorder();
+            if (keyData == Keys.Escape) return true;
+        }
         if (keyData == Keys.F2)
         {
             FinishVolumeGesture();
@@ -165,6 +171,7 @@ public partial class FrmMain : Form
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        CancelTrackReorder();
         FinishVolumeGesture();
         EndRangeDrag();
         EndTimelineDrag();
@@ -356,6 +363,7 @@ public partial class FrmMain : Form
 
     private void RefreshTrackPanels()
     {
+        CancelTrackReorder();
         if (rangeDragTrack is not null && (!trackManager.Tracks.Contains(rangeDragTrack) || rangeDragTrack.Revision != rangeDragRevision))
             EndRangeDrag();
         if (timelineDragSource?.Tag is Track dragged && !trackManager.Tracks.Contains(dragged))

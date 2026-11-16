@@ -19,7 +19,7 @@ public partial class FrmMain
     private void BindTrackIdentityHeader(Track track, Label header)
     {
         header.UseMnemonic = false;
-        header.Padding = new Padding(9, 0, 0, 0);
+        header.Padding = new Padding(31, 0, 0, 0);
         header.MouseDoubleClick += (sender, e) => { if (e.Button == MouseButtons.Left) RenameTrack(track); };
         ContextMenuStrip context = new(components);
         context.Items.Add("Rename...", null, (sender, e) => RenameTrack(track));
@@ -28,7 +28,7 @@ public partial class FrmMain
         header.Paint += (sender, e) =>
         {
             using Brush color = new SolidBrush(track.TrackColor.IsEmpty ? Color.Cyan : track.TrackColor);
-            e.Graphics.FillRectangle(color, 2, 2, 4, Math.Max(0, header.Height - 4));
+            e.Graphics.FillRectangle(color, 24, 2, 4, Math.Max(0, header.Height - 4));
         };
     }
 }

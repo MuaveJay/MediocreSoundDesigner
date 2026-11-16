@@ -59,8 +59,7 @@ public partial class TrackManager : IDisposable
     }
 
     private bool MixIsCurrent => pseudoCombinedTrack is not null && mixedTracks.Length == Tracks.Count &&
-        mixedTracks.Select((snapshot, index) => ReferenceEquals(snapshot.Track, Tracks[index]) &&
-                           snapshot.Revision == Tracks[index].MixRevision).All(current => current);
+        mixedTracks.All(snapshot => Tracks.Contains(snapshot.Track) && snapshot.Revision == snapshot.Track.MixRevision);
 
     public float[] GetMixedSamples()
     {

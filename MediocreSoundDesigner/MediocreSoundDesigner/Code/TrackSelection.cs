@@ -93,6 +93,12 @@ public partial class TrackManager
                 track.TrackHeader.AccessibleName = track.TrackHeader.Text + (selected ? ", selected" : ", unselected");
                 track.TrackHeader.BackColor = background;
                 track.TrackHeader.ForeColor = TrackVisuals.Readable(Settings.Color.WinFg, background);
+                if (track.TrackHeader.Controls["trackReorderHandle"] is Control handle)
+                {
+                    handle.AccessibleName = "Drag to reorder " + track.Name;
+                    handle.BackColor = background;
+                    handle.ForeColor = track.TrackHeader.ForeColor;
+                }
                 track.TrackHeader.Invalidate();
             }
         }
