@@ -409,8 +409,8 @@ public partial class FrmMain : Form
         };
         pan.MouseClick += (sender, e) =>
         {
-            if (e.Button == MouseButtons.Left)
-                trackManager.SelectTrack(track);
+            // Selection is applied once on mouse-down by the range/selection
+            // handler. A later click must not collapse a modifier-selected group.
             UpdateSplitControls();
             UpdateTrimControls();
         };
@@ -419,7 +419,7 @@ public partial class FrmMain : Form
         pan.WheelZoom += Waveform_Wheel;
         pan.MouseDoubleClick += (sender, e) =>
         {
-            if (e.Button != MouseButtons.Left)
+            if (e.Button != MouseButtons.Left || (ModifierKeys & (Keys.Control | Keys.Shift)) != 0)
                 return;
             track.ToggleDisabled();
             track.PanDrawSamples.Invalidate();

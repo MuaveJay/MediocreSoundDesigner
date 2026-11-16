@@ -19,10 +19,24 @@ public partial class FrmMain
     {
         if (e.Button != MouseButtons.Left || sender is not Control header || header.Tag is not Track track)
             return;
+        SelectTrackFromPointer(track);
+    }
+
+    // Read modifiers once on mouse-down. Mouse-up/click must not overwrite this
+    // selection if the user releases Ctrl/Shift before releasing the mouse.
+    private bool SelectTrackFromPointer(Track track, bool modifiersOnly = false)
+    {
+        Keys modifiers = ModifierKeys;
+        bool toggle = (modifiers & Keys.Control) != 0;
+        bool extend = (modifiers & Keys.Shift) != 0;
+        if (modifiersOnly && !toggle && !extend) return false;
+        FinishVolumeGesture();
         EndRangeDrag();
         EndTimelineDrag();
-        trackManager.SelectTrackByClick(track, (ModifierKeys & Keys.Control) != 0, (ModifierKeys & Keys.Shift) != 0);
+        CancelTrackReorder();
+        trackManager.SelectTrackByClick(track, toggle, extend);
         UpdateTransportControls();
+        return true;
     }
 
     private void CreateTrackHeader(Track track)
@@ -53,6 +67,6 @@ public partial class FrmMain
         int count = trackManager.SelectedTracks.Count;
         if (count == 0)
             return "No tracks selected. Click a track header to select.";
-        return $"{count} selected | Active: {trackManager.SelectedTrack.Name} (split/trim/effects) | Ctrl/Shift-click headers to select.";
+        return $"{count} selected | Active: {trackManager.SelectedTrack.Name} (split/trim/effects) | Ctrl/Shift-click tracks to select.";
     }
 }

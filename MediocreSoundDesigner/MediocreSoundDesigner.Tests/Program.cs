@@ -40,6 +40,7 @@ internal static partial class Program
         RunTrackReorderChecks();
         RunWindowModeChecks();
         RunEditorLayoutChecks();
+        RunModifierSelectionChecks();
         Console.WriteLine(failures == 0 ? $"All {checks} regression checks passed." : $"{failures} of {checks} regression checks failed.");
         return failures == 0 ? 0 : 1;
     }

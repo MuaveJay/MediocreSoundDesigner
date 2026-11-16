@@ -47,6 +47,7 @@ public partial class FrmMain
     {
         if (e.Button != MouseButtons.Left || sender is not Control handle ||
             handle.Tag is not Track track || !trackManager.Tracks.Contains(track)) return;
+        if (SelectTrackFromPointer(track, modifiersOnly: true)) return;
         FinishVolumeGesture();
         EndRangeDrag();
         EndTimelineDrag();

@@ -20,7 +20,7 @@ public partial class FrmMain
     {
         header.UseMnemonic = false;
         header.Padding = new Padding(31, 0, 0, 0);
-        header.MouseDoubleClick += (sender, e) => { if (e.Button == MouseButtons.Left) RenameTrack(track); };
+        header.MouseDoubleClick += (sender, e) => { if (e.Button == MouseButtons.Left && (ModifierKeys & (Keys.Control | Keys.Shift)) == 0) RenameTrack(track); };
         ContextMenuStrip context = new(components);
         context.Items.Add("Rename...", null, (sender, e) => RenameTrack(track));
         context.Items.Add("Change Color...", null, (sender, e) => ChangeTrackColor(track));
