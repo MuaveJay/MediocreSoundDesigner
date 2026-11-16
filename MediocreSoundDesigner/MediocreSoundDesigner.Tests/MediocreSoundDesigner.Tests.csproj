@@ -9,4 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="..\MediocreSoundDesigner\MediocreSoundDesigner.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\MediocreSoundDesigner\Resources\beat-it.wav" Link="Fixtures\beat-it.wav" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\MediocreSoundDesigner\Resources\silence.wav" Link="Fixtures\silence.wav" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\MediocreSoundDesigner\Resources\So-Tired-forward.wav" Link="Fixtures\So-Tired-forward.wav" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
