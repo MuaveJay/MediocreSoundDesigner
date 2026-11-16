@@ -12,6 +12,7 @@ internal static partial class Program
         Run("High zoom draws connected positive and negative sample values", SampleDetailRendering);
         Run("Overview rendering preserves hidden positive and negative peaks", OverviewRendering);
         Run("Quiet clip boundaries remain visible at their actual time", QuietBoundaryRendering);
+        Run("Flat positive, negative and silent audio stays visible at overview zoom", FlatOverviewRendering);
         Run("The full exponential zoom range remains finite and useful", ZoomRange);
         Run("Zooming preserves the time under an interior pointer", ZoomAnchor);
         Run("Horizontal navigation reaches the end without changing audio", HorizontalView);
@@ -97,6 +98,20 @@ internal static partial class Program
         using Bitmap bitmap = RenderTrack(track, 500, 0, 80, 80);
         Assert(bitmap.GetPixel(0, 2).ToArgb() != Color.Black.ToArgb() && bitmap.GetPixel(0, 78).ToArgb() != Color.Black.ToArgb(),
             "Overview skipped impulses between sampled columns.");
+    }
+
+    private static void FlatOverviewRendering()
+    {
+        foreach (float value in new[] { 0f, 0.5f, -0.5f })
+        {
+            using Track track = new(Constant(1000, value));
+            using Bitmap bitmap = RenderTrack(track, 10, 0, 160, 80);
+            int y = (int)(40 - value * 38);
+            Assert(bitmap.GetPixel(40, y).ToArgb() != Color.Black.ToArgb(),
+                $"Flat audio at {value} was invisible at overview scale.");
+            Assert(bitmap.GetPixel(40, y + 3).ToArgb() == Color.Black.ToArgb() &&
+                bitmap.GetPixel(110, y).ToArgb() == Color.Black.ToArgb(), "Flat audio was smeared outside its amplitude or clip.");
+        }
     }
 
     private static void QuietBoundaryRendering()
