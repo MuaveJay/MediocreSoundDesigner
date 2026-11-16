@@ -230,6 +230,7 @@ public partial class TrackManager
         {
             track.HistoryOwner = null;
             track.PanDrawSamples?.Dispose();
+            track.TrackHeader?.ContextMenuStrip?.Dispose();
             track.TrackHeader?.Dispose();
             track.Dispose();
         }
@@ -242,6 +243,8 @@ public partial class TrackManager
         SelectedTrack = null;
         selectionAnchor = null;
         capturedTracks.Clear();
+        savedProjectContent = null;
+        savedProjectLoop = false;
         undoHistory.Clear();
         redoHistory.Clear();
     }

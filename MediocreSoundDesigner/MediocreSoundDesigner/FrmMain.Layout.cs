@@ -20,7 +20,7 @@ public partial class FrmMain
     {
         Font = new Font("Segoe UI", 9f);
         MinimumSize = new Size(Ui(650), Ui(500));
-        ConfigureToolbarButton(btnImportAudio, "Open Audio...", "Open an audio file", (sender, e) => menuFileOpen_Click(sender, e));
+        ConfigureToolbarButton(btnImportAudio, "Import Audio...", "Import audio as a new track (Ctrl+I)", (sender, e) => menuFileOpen_Click(sender, e));
         ConfigureToolbarButton(btnSplitToolbar, "Split", "Split the active track at the playhead (Ctrl+K)", (sender, e) => menuEditSplit.PerformClick());
         ConfigureToolbarButton(btnTrimToolbar, "Trim", "Keep the selected audio range (Ctrl+T)", (sender, e) => menuEditTrim.PerformClick());
         ConfigureToolbarButton(btnUndoToolbar, "Undo", "Undo the last edit (Ctrl+Z)", (sender, e) => menuEditUndo.PerformClick());
@@ -33,7 +33,7 @@ public partial class FrmMain
         lblTrackCount.AutoEllipsis = true;
         lblEditorHint.AutoEllipsis = true;
         lblEmptyProject.Name = "lblEmptyProject";
-        lblEmptyProject.Text = "Start with a sound\nOpen Audio or use the Generate menu to create a track.";
+        lblEmptyProject.Text = "Start with a sound\nImport Audio or use the Generate menu to create a track.";
         lblEmptyProject.TextAlign = ContentAlignment.MiddleCenter;
         lblEmptyProject.AutoEllipsis = true;
         panTracks.Controls.Add(lblEmptyProject);

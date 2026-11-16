@@ -482,5 +482,7 @@ public partial class Track : IDisposable
         outputDevice = null;
         playbackAudio = null;
         waveformPeaks = null;
+        samples = Array.Empty<float>();
+        ClearLocalHistory();
     }
 }

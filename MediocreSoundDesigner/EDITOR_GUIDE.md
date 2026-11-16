@@ -5,7 +5,9 @@ Open the solution in Visual Studio, select the desired local branch or `main`, t
 | Action | Control |
 | --- | --- |
 | All shortcuts | View > Keyboard Shortcuts... or F1 opens searchable keyboard and mouse help; Close or Escape exits |
-| Add audio | Open Audio button or File menu; Generate creates test sounds or records audio |
+| Project files | Ctrl+N: New; Ctrl+O: Open; Ctrl+S: Save; Ctrl+Shift+S: Save As. Projects embed all audio in one .msdproj file |
+| Add audio | Import Audio button or File > Import Audio (Ctrl+I); Generate creates test sounds or records audio |
+| Export mix | File > Export Audio (Ctrl+E) saves a WAV mix, separate from the editable project |
 | Select tracks | Click a header; Ctrl-click a header, waveform or :: grip to toggle tracks; Shift-click selects a range of rows; Ctrl+Shift-click adds a range |
 | Move playhead | Click/drag the timestamp ruler, or right-click/right-drag a waveform |
 | Play / pause | Play/Pause button or Space; resumes at the shared playhead |
@@ -25,7 +27,7 @@ Open the solution in Visual Studio, select the desired local branch or `main`, t
 
 With multiple selected tracks, volume and deletion affect the group. Split, trim and audio effects operate on the active track, identified in its header. Audio timing is independent of vertical row order and waveform zoom.
 
-Names and colors belong to the current session and Undo history. Export saves the mixed audio; the app does not yet save/reopen an editable multitrack project.
+Save Project writes a self-contained .msdproj file with edited audio, track order/positions/names/colors/volume/mute, the playhead, selection/range, zoom/view, looping and follow preference. Opening restores a stopped session with fresh Undo/Redo history. An asterisk in the title means unsaved audio/track/loop changes; New, Open and Close offer Save, Discard or Cancel. View/selection/playback navigation alone does not mark a project dirty. Export Audio saves only the mixed WAV and does not save or clear project changes. See PROJECT_FORMAT.md for format limits.
 
 ## Before the presentation
 
