@@ -45,6 +45,7 @@ public partial class FrmMain
 
     private void ApplyViewport(double start, double scale)
     {
+        ResetFollowingAfterZoom();
         trackManager.SetViewport(start, scale, panTracks.ClientSize.Width);
         trkDrawTimescale.Value = ZoomScale.ToSlider(trackManager.DrawTimescale);
         trackManager.RedrawAll();
@@ -68,6 +69,7 @@ public partial class FrmMain
 
     private void scrTimeline_Scroll(object sender, ScrollEventArgs e)
     {
+        SuspendPlayheadFollowing();
         double maximum = Math.Max(0, trackManager.TimelineExtentFrames - panTracks.ClientSize.Width * trackManager.DrawTimescale);
         ApplyViewport(maximum * e.NewValue / ScrollResolution, trackManager.DrawTimescale);
     }
@@ -92,7 +94,8 @@ public partial class FrmMain
     private void PaintPlayhead(Graphics graphics, Size size)
     {
         double x = TimelineScale.PixelAtFrame(trackManager.GetPlayheadFrame(), trackManager.DrawTimescale, trackManager.ViewStartFrame);
-        if (x < 0 || x >= size.Width) return;
+        if (x < 0 || x > size.Width + 1e-7) return;
+        x = Math.Min(x, size.Width);
         using Pen pen = new(Settings.Color.Playline, 2);
         graphics.DrawLine(pen, (float)Math.Floor(x), 0, (float)Math.Floor(x), size.Height);
     }

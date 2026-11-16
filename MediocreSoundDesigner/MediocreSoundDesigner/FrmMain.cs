@@ -83,6 +83,7 @@ public partial class FrmMain : Form
         SetupSelectedVolume();
         SetupWaveformView();
         SetupWindowModes();
+        SetupPlayheadFollowing();
         SetupShortcutHelp();
         SetupEditorLayout();
 
@@ -200,9 +201,15 @@ public partial class FrmMain : Form
         RunPlaybackAction(() =>
         {
             if (trackManager.State == NAudio.Wave.PlaybackState.Playing)
+            {
                 trackManager.PauseAll();
+                PausePlayheadFollowing();
+            }
             else
+            {
                 trackManager.PlayAll();
+                ResumePlayheadFollowing();
+            }
         });
     }
 
@@ -352,7 +359,11 @@ public partial class FrmMain : Form
 
     private void tmrUpdatePlaybackState_Tick(object sender, EventArgs e)
     {
-        RunPlaybackAction(trackManager.UpdatePlayback);
+        RunPlaybackAction(() =>
+        {
+            trackManager.UpdatePlayback();
+            TickPlayheadFollowing();
+        });
     }
 
     private void trkDrawTimescale_Scroll(object sender, EventArgs e)
@@ -429,12 +440,13 @@ public partial class FrmMain : Form
         {
             track.DrawSamples(e.Graphics, trackManager.DrawTimescale, trackManager.ViewStartFrame);
             PaintRangeSelection(track, e.Graphics, pan.ClientSize);
-            PaintPlayhead(e.Graphics, pan.ClientSize);
             if (trackManager.IsTrackSelected(track))
             {
                 using Pen outline = new(track == trackManager.SelectedTrack ? Color.Gold : Settings.Color.Playline);
                 e.Graphics.DrawRectangle(outline, 0, 0, Math.Max(0, pan.ClientSize.Width - 1), Math.Max(0, pan.ClientSize.Height - 1));
             }
+            // Keep the cursor above selection outlines, including the exact end.
+            PaintPlayhead(e.Graphics, pan.ClientSize);
         };
         panTracks.Controls.Add(pan);
         track.LinkPanels(pan, panTracks);

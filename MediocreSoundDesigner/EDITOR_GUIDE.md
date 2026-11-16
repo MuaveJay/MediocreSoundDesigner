@@ -14,6 +14,7 @@ Open the solution in Visual Studio, select the desired local branch or `main`, t
 | Trim | Left-drag a waveform range, then Trim or Ctrl+T; the kept audio stays at its original timeline position |
 | Precise numeric edits | Ctrl+Shift+K for split time; Ctrl+Shift+T for trim times |
 | Zoom | Top zoom slider or mouse wheel over the ruler/waveform; zoom far enough to see individual samples |
+| Follow playback | View > Follow Playhead is on by default. The view eases along with playback; Pause freezes it and Stop returns to the beginning. Manual panning pauses following until Play/resume, a seek, or re-enabling the option |
 | Navigate | Fit shows all tracks in time; the horizontal scrollbar pans the zoomed timeline |
 | Change volume | Bottom volume slider changes only selected tracks; Mixed means their levels differ |
 | Name / color | F2 or double-click a header to rename; header context menu changes name/color |
