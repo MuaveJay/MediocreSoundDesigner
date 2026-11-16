@@ -53,6 +53,7 @@ public partial class FrmMain
     private void btnStop_Click(object sender, EventArgs e)
     {
         trackManager.StopAll();
+        StopPlayheadFollowing();
         UpdateTransportControls();
     }
 
@@ -60,6 +61,7 @@ public partial class FrmMain
     {
         long frame = (long)Math.Round(trackManager.DurationFrames *
             (double)trkPlaybackPosition.Value / trkPlaybackPosition.Maximum);
+        ResumePlayheadFollowing(seek: true);
         RunPlaybackAction(() => trackManager.SeekToFrame(frame));
     }
 

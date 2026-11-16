@@ -77,9 +77,9 @@ public sealed class TimelineRuler : Control
         }
         e.Graphics.DrawLine(ticksPen, 0, Height - 1, Width, Height - 1);
         double playheadX = TimelineScale.PixelAtFrame(playheadFrame, framesPerPixel, viewStartFrame);
-        if (playheadX >= 0 && playheadX < ClientSize.Width)
+        if (playheadX >= 0 && playheadX <= ClientSize.Width + 1e-7)
         {
-            float x = (float)Math.Floor(playheadX);
+            float x = (float)Math.Floor(Math.Min(playheadX, ClientSize.Width));
             using Brush head = new SolidBrush(Settings.Color.Playline);
             using Pen line = new(Settings.Color.Playline, 2);
             e.Graphics.FillPolygon(head, new[] { new PointF(x - 6, Height - 15), new PointF(x + 6, Height - 15), new PointF(x, Height - 7) });

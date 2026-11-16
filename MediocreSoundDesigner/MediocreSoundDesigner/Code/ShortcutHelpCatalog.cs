@@ -24,6 +24,7 @@ public static class ShortcutHelpCatalog
         ReadMenus(menu.Items, "");
         entries.AddRange(new ShortcutHelpEntry[]
         {
+            new("View", "Follow Playhead (View menu)", "Smoothly follow playback. Manual horizontal panning pauses following until Play/resume, a seek, or re-enabling the option."),
             new("Playback", "Space", "Play or pause at the current playhead; resume from the paused position.", Keys.Space),
             new("Editing", "Delete", "Delete selected tracks after confirmation; Undo restores them.", Keys.Delete),
             new("Editing", "F2", "Rename the active track.", Keys.F2),

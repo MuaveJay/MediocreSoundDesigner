@@ -106,6 +106,7 @@ public partial class FrmMain
         if (frame == lastScrubFrame)
             return;
         lastScrubFrame = frame;
+        ResumePlayheadFollowing(seek: true);
         RunPlaybackAction(() => trackManager.SeekToFrame(frame));
     }
 
@@ -154,7 +155,7 @@ public partial class FrmMain
         timelineRuler.DurationFrames = trackManager.TimelineExtentFrames;
         timelineRuler.PlayheadFrame = frame;
         int x = trackManager.GetPlayheadPos();
-        bool visible = trackManager.Tracks.Count > 0 && x >= 0 && x < panTracks.ClientSize.Width;
+        bool visible = trackManager.Tracks.Count > 0 && x >= 0 && x <= panTracks.ClientSize.Width;
         lblPlayhead.Left = visible ? x : 0;
         lblPlayhead.Top = panTracks.AutoScrollPosition.Y;
         lblPlayhead.Visible = false;
