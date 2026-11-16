@@ -83,6 +83,7 @@ public partial class FrmMain : Form
         SetupSelectedVolume();
         SetupWaveformView();
         SetupWindowModes();
+        SetupShortcutHelp();
         SetupEditorLayout();
 
         btnPlay.BackgroundImage = null;

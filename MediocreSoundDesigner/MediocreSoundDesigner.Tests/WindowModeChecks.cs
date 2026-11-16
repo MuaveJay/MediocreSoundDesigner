@@ -23,7 +23,7 @@ internal static partial class Program
         {
             Assert(form.FormBorderStyle == FormBorderStyle.Sizable && form.MaximizeBox && form.MinimizeBox, "Editor still uses a tool window.");
             Assert(Field<ToolStripMenuItem>(form, "menuFullscreen").ShortcutKeys == Keys.F11 &&
-                Field<ToolStripMenuItem>(form, "menuView").DropDownItems.Count == 2, "Window controls are missing.");
+                Field<ToolStripMenuItem>(form, "menuView").DropDownItems.Contains(Field<ToolStripMenuItem>(form, "menuFullscreen")), "Window controls are missing.");
             object[] args = { new Message(), Keys.F11 };
             form.GetType().GetMethod("ProcessCmdKey", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(form, args);
             Assert(ReorderField<bool>(form, "fullscreen"), "F11 did not enter fullscreen.");
