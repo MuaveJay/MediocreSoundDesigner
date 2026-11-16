@@ -64,7 +64,8 @@ public partial class TrackManager
             if (before.State.Volume != after.State.Volume || before.State.StartFrame != after.State.StartFrame ||
                 before.State.IsDisabled != after.State.IsDisabled || before.State.Name != after.State.Name ||
                 before.State.TrackColor.ToArgb() != after.State.TrackColor.ToArgb() ||
-                !before.State.Samples.AsSpan().SequenceEqual(after.State.Samples))
+                !before.State.Samples.AsSpan().SequenceEqual(after.State.Samples) ||
+                !before.State.Automation.SequenceEqual(after.State.Automation))
                 return false;
         }
         return true;
@@ -252,22 +253,28 @@ public partial class TrackManager
 
 public partial class Track
 {
-    internal sealed record EditState(float[] Samples, float Volume, long StartFrame, bool IsDisabled, string Name, Color TrackColor);
+    internal sealed record EditState(float[] Samples, float Volume, long StartFrame, bool IsDisabled, string Name, Color TrackColor,
+        List<(long Frame, float Gain)> Automation);
     internal TrackManager HistoryOwner { get; set; }
     private bool NeedsProjectEdit => HistoryOwner is not null && !HistoryOwner.IsEditing;
 
-    internal EditState CaptureEditState() => new(CloneSamples(), Volume, startFrame, IsDisabled, Name, TrackColor);
+    internal EditState CaptureEditState() => new(CloneSamples(), Volume, startFrame, IsDisabled, Name, TrackColor,
+        automationPoints.ToList());
 
     internal void RestoreEditState(EditState state)
     {
         bool audioChanged = !samples.AsSpan().SequenceEqual(state.Samples);
-        bool mixChanged = audioChanged || Volume != state.Volume || startFrame != state.StartFrame || IsDisabled != state.IsDisabled;
+        bool automationChanged = !automationPoints.SequenceEqual(state.Automation);
+        bool mixChanged = audioChanged || automationChanged || Volume != state.Volume ||
+            startFrame != state.StartFrame || IsDisabled != state.IsDisabled;
         samples = (float[])state.Samples.Clone();
         Volume = state.Volume;
         startFrame = state.StartFrame;
         IsDisabled = state.IsDisabled;
         Name = state.Name;
         TrackColor = state.TrackColor;
+        automationPoints.Clear();
+        automationPoints.AddRange(state.Automation);
         ClearLocalHistory();
         Changed(audioChanged, mixChanged);
     }

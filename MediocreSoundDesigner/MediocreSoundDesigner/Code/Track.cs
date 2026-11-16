@@ -23,14 +23,18 @@ public partial class Track : IDisposable
     private float[] playbackAudio;
     private long playbackAudioRevision = -1;
     private long startFrame;
+    private readonly List<(long Frame, float Gain)> automationPoints = new();
 
-    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor)> undoHistory = new();
-    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor)> redoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor,
+        List<(long Frame, float Gain)> Automation)> undoHistory = new();
+    private readonly Stack<(float[] Samples, float Volume, long StartFrame, string Name, Color TrackColor,
+        List<(long Frame, float Gain)> Automation)> redoHistory = new();
 
     public bool IsDisabled { get; private set; }
     public Panel PanDrawSamples { get; private set; }
     public Control TrackHeader { get; internal set; }
     public float Volume { get; private set; } = 1.0f;
+    public IReadOnlyList<(long Frame, float Gain)> AutomationPoints => automationPoints.AsReadOnly();
     public int SampleRate => sampleRate;
     public int Channels => channels;
     public long Revision { get; private set; }
@@ -63,7 +67,7 @@ public partial class Track : IDisposable
 
     public Track Duplicate(bool preserveIdentity = false)
     {
-        return new Track(samples, sampleRate, channels, playbackFactory)
+        Track copy = new Track(samples, sampleRate, channels, playbackFactory)
         {
             Volume = this.Volume,
             startFrame = this.startFrame,
@@ -72,6 +76,8 @@ public partial class Track : IDisposable
             TrackColor = TrackColor,
             needsDefaultName = false
         };
+        copy.automationPoints.AddRange(automationPoints);
+        return copy;
     }
 
     public void LinkPanels(Panel panDrawSamples, Panel panContainer)
@@ -91,7 +97,7 @@ public partial class Track : IDisposable
     {
         if (HistoryOwner is not null)
             return;
-        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
+        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor, automationPoints.ToList()));
         redoHistory.Clear();
     }
 
@@ -101,9 +107,12 @@ public partial class Track : IDisposable
             return HistoryOwner.Undo();
         if (undoHistory.Count == 0)
             return false;
-        redoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
+        redoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor, automationPoints.ToList()));
         var previous = undoHistory.Pop();
-        (samples, Volume, startFrame, Name, TrackColor) = previous;
+        (samples, Volume, startFrame, Name, TrackColor) =
+            (previous.Samples, previous.Volume, previous.StartFrame, previous.Name, previous.TrackColor);
+        automationPoints.Clear();
+        automationPoints.AddRange(previous.Automation);
         Changed();
         return true;
     }
@@ -114,14 +123,117 @@ public partial class Track : IDisposable
             return HistoryOwner.Redo();
         if (redoHistory.Count == 0)
             return false;
-        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor));
+        undoHistory.Push((CloneSamples(), Volume, startFrame, Name, TrackColor, automationPoints.ToList()));
         var next = redoHistory.Pop();
-        (samples, Volume, startFrame, Name, TrackColor) = next;
+        (samples, Volume, startFrame, Name, TrackColor) =
+            (next.Samples, next.Volume, next.StartFrame, next.Name, next.TrackColor);
+        automationPoints.Clear();
+        automationPoints.AddRange(next.Automation);
         Changed();
         return true;
     }
 
     public float[] CloneSamples() => (float[])samples.Clone();
+
+    // Automation points are measured from the start of this track, not the project timeline.
+    // Gain is between 0 (silent) and 2 (200%). Points are kept in time order.
+    public bool SetAutomationPoint(double seconds, float gain)
+    {
+        if (!double.IsFinite(seconds) || !float.IsFinite(gain) ||
+            seconds < 0 || seconds > DurationSeconds || gain < 0 || gain > 2)
+            return false;
+
+        long frame = Math.Min(TimelineFrameCount,
+            (long)Math.Round(seconds * sampleRate, MidpointRounding.AwayFromZero));
+        int existing = automationPoints.FindIndex(p => p.Frame == frame);
+        if (existing >= 0 && automationPoints[existing].Gain == gain)
+            return false;
+
+        if (NeedsProjectEdit)
+            return HistoryOwner.ExecuteEdit(() => SetAutomationPoint(seconds, gain));
+
+        SaveState();
+        if (existing >= 0)
+            automationPoints[existing] = (frame, gain);
+        else
+        {
+            int index = automationPoints.FindIndex(p => p.Frame > frame);
+            if (index < 0) automationPoints.Add((frame, gain));
+            else automationPoints.Insert(index, (frame, gain));
+        }
+        Changed(false);
+        return true;
+    }
+
+    public bool RemoveAutomationPoint(double seconds)
+    {
+        if (!double.IsFinite(seconds) || seconds < 0 || seconds > DurationSeconds)
+            return false;
+        long frame = (long)Math.Round(seconds * sampleRate, MidpointRounding.AwayFromZero);
+        int index = automationPoints.FindIndex(p => p.Frame == frame);
+        if (index < 0)
+            return false;
+        if (NeedsProjectEdit)
+            return HistoryOwner.ExecuteEdit(() => RemoveAutomationPoint(seconds));
+
+        SaveState();
+        automationPoints.RemoveAt(index);
+        Changed(false);
+        return true;
+    }
+
+    public void ClearAutomation()
+    {
+        if (automationPoints.Count == 0)
+            return;
+        if (NeedsProjectEdit)
+        {
+            HistoryOwner.ExecuteEdit(() => ClearAutomation());
+            return;
+        }
+
+        SaveState();
+        automationPoints.Clear();
+        Changed(false);
+    }
+
+    // Between points the volume changes smoothly; outside them it holds steady.
+    private float AutomationGainAt(long frame)
+    {
+        if (automationPoints.Count == 0)
+            return 1f;
+        if (frame <= automationPoints[0].Frame)
+            return automationPoints[0].Gain;
+
+        for (int i = 1; i < automationPoints.Count; i++)
+        {
+            var next = automationPoints[i];
+            if (frame <= next.Frame)
+            {
+                var previous = automationPoints[i - 1];
+                float position = (float)(frame - previous.Frame) / (next.Frame - previous.Frame);
+                return previous.Gain + (next.Gain - previous.Gain) * position;
+            }
+        }
+        return automationPoints[^1].Gain;
+    }
+
+    // Preserve the same automation curve when trimming or splitting a track.
+    private List<(long Frame, float Gain)> AutomationRange(long firstFrame, long endFrame)
+    {
+        List<(long Frame, float Gain)> result = new();
+        if (automationPoints.Count == 0)
+            return result;
+
+        result.Add((0, AutomationGainAt(firstFrame)));
+        foreach (var point in automationPoints)
+        {
+            if (point.Frame > firstFrame && point.Frame < endFrame)
+                result.Add((point.Frame - firstFrame, point.Gain));
+        }
+        result.Add((endFrame - firstFrame, AutomationGainAt(endFrame)));
+        return result;
+    }
 
     public void ReplaceSamples(float[] replacement)
     {
@@ -256,9 +368,12 @@ public partial class Track : IDisposable
             return false;
         int start = checked((int)(firstFrame * channels));
         int end = checked((int)(endFrame * channels));
+        var keptAutomation = AutomationRange(firstFrame, endFrame);
         SaveState();
         startFrame = checked(startFrame + firstFrame);
         samples = samples[start..end];
+        automationPoints.Clear();
+        automationPoints.AddRange(keptAutomation);
         Changed();
         return true;
     }
@@ -279,12 +394,18 @@ public partial class Track : IDisposable
         if (NeedsProjectEdit)
             return HistoryOwner.SplitTrackAtFrame(this, checked(startFrame + localFrame));
         int splitIndex = checked((int)(localFrame * channels));
+        var firstAutomation = AutomationRange(0, localFrame);
+        var secondAutomation = AutomationRange(localFrame, TimelineFrameCount);
         Track second = Duplicate(preserveIdentity: true);
         second.Name = NameWithSuffix(Name, " Split");
         second.ReplaceSamples(samples[splitIndex..]);
         second.MoveToFrame(checked(startFrame + localFrame));
+        second.automationPoints.Clear();
+        second.automationPoints.AddRange(secondAutomation);
         SaveState();
         samples = samples[..splitIndex];
+        automationPoints.Clear();
+        automationPoints.AddRange(firstAutomation);
         Changed();
         return second;
     }
@@ -382,7 +503,21 @@ public partial class Track : IDisposable
         Changed();
     }
 
-    internal float[] GetMixSamples() => CloneSamples();
+    internal float[] GetMixSamples()
+    {
+        float[] adjusted = CloneSamples();
+        if (automationPoints.Count == 0)
+            return adjusted;
+
+        int frames = adjusted.Length / channels;
+        for (int frame = 0; frame < frames; frame++)
+        {
+            float gain = AutomationGainAt(frame);
+            for (int channel = 0; channel < channels; channel++)
+                adjusted[frame * channels + channel] *= gain;
+        }
+        return adjusted;
+    }
 
     public float[] GetAdjustedSamples()
     {
@@ -483,6 +618,7 @@ public partial class Track : IDisposable
         playbackAudio = null;
         waveformPeaks = null;
         samples = Array.Empty<float>();
+        automationPoints.Clear();
         ClearLocalHistory();
     }
 }
