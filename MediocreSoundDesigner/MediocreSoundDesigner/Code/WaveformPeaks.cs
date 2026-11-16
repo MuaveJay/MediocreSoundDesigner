@@ -136,9 +136,48 @@ public partial class Track
                 }
             }
         }
+
+        DrawAutomation(graphics, scale, viewStartFrame, height);
+
         // A real clip edge remains visible even when its first/last sample is quiet.
         using Pen boundary = new(Color.FromArgb(160, color));
         if (clipStart >= 0 && clipStart < width) graphics.DrawLine(boundary, (float)Math.Floor(clipStart), 0, (float)Math.Floor(clipStart), height);
         if (clipEnd >= 0 && clipEnd <= width) graphics.DrawLine(boundary, (float)Math.Min(width - 1, Math.Floor(clipEnd)), 0, (float)Math.Min(width - 1, Math.Floor(clipEnd)), height);
+    }
+
+    private void DrawAutomation(Graphics graphics, double scale, double viewStartFrame, int height)
+    {
+        if (AutomationPoints.Count == 0)
+            return;
+
+        // 200% is at the top, 100% in the middle and 0% at the bottom.
+        float GainY(float gain) => 8 + (2f - Math.Clamp(gain, 0f, 2f)) / 2f * Math.Max(0, height - 16);
+        float FrameX(long frame) => (float)TimelineScale.PixelAtFrame(StartFrame + frame, scale, viewStartFrame);
+
+        using Pen line = new(Color.MediumPurple, 2.5f);
+        using Brush marker = new SolidBrush(Color.MediumPurple);
+        using Pen markerOutline = new(Color.White, 1.5f);
+
+        // Extend the line from the clip's beginning to its end.
+        PointF previous = new(FrameX(0), GainY(AutomationGainAt(0)));
+        foreach (var point in AutomationPoints)
+        {
+            PointF current = new(FrameX(point.Frame), GainY(point.Gain));
+            graphics.DrawLine(line, previous, current);
+            previous = current;
+        }
+        PointF end = new(FrameX(TimelineFrameCount), GainY(AutomationGainAt(TimelineFrameCount)));
+        graphics.DrawLine(line, previous, end);
+
+        // Draw the editable-looking markers over the line (dragging comes next).
+        foreach (var point in AutomationPoints)
+        {
+            float x = FrameX(point.Frame);
+            if (x < graphics.ClipBounds.Left - 6 || x > graphics.ClipBounds.Right + 6)
+                continue;
+            float y = GainY(point.Gain);
+            graphics.FillEllipse(marker, x - 5, y - 5, 10, 10);
+            graphics.DrawEllipse(markerOutline, x - 5, y - 5, 10, 10);
+        }
     }
 }

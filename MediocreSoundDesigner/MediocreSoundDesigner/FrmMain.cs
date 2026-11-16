@@ -51,13 +51,29 @@ public partial class FrmMain : Form
                 ShortcutKeys = Keys.Control | Keys.V
             });
         menuEdit.DropDownItems.Add("Fade In", null, (sender, e) =>
-    {
-        trackManager.SelectedTrack?.FadeIn();
-    });
+        {
+            trackManager.SelectedTrack?.FadeIn();
+        });
 
         menuEdit.DropDownItems.Add("Fade Out", null, (sender, e) =>
         {
             trackManager.SelectedTrack?.FadeOut();
+        });
+
+        menuEdit.DropDownItems.Add("Volume Automation...", null, (sender, e) =>
+        {
+            Track selected = trackManager.SelectedTrack;
+            if (selected is null)
+            {
+                MessageBox.Show("Select a track first.", "Volume Automation",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            FinishVolumeGesture();
+            using FrmVolumeAutomation editor = new(selected);
+            editor.ShowDialog(this);
+            RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
         });
 
         ToolStripMenuItem playbackMenu = new("Playback");

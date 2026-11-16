@@ -7,6 +7,11 @@ public partial class FrmMain
     private MouseButtons timelineDragButton;
     private long lastScrubFrame = -1;
 
+    // Alt + left-drag moves an existing automation point.
+    private Track automationDragTrack;
+    private Control automationDragSource;
+    private long automationDragOriginalFrame;
+
     private void SetupTimeline()
     {
         timelineRuler.Name = "timelineRuler";
@@ -21,19 +26,185 @@ public partial class FrmMain
         panTracks.ClientSizeChanged += (sender, e) => { LayoutTimelineRuler(); LayoutRangeReadout(); };
         ToolTip help = new(components);
         help.SetToolTip(timelineRuler, "Click or right-drag to move the playhead.");
-        help.SetToolTip(panTracks, "Right-click or right-drag a waveform to move the playhead.");
+        help.SetToolTip(panTracks, "Right-click or right-drag a waveform to move the playhead. Alt + left-drag a purple point to move it.");
     }
 
     private void BindTimelineInput(Control control)
     {
-        control.MouseDown += Timeline_MouseDown;
-        control.MouseMove += Timeline_MouseMove;
-        control.MouseUp += Timeline_MouseUp;
-        control.MouseCaptureChanged += Timeline_MouseCaptureChanged;
-        control.MouseDown += Range_MouseDown;
-        control.MouseMove += Range_MouseMove;
-        control.MouseUp += Range_MouseUp;
-        control.MouseCaptureChanged += Range_MouseCaptureChanged;
+        // Handle automation first, so a drag does not create a range selection or seek.
+        control.MouseDown += (sender, e) =>
+        {
+            if (TryEditAutomationPoint((Control)sender, e) ||
+                TryBeginAutomationDrag((Control)sender, e))
+                return;
+            Timeline_MouseDown(sender, e);
+            Range_MouseDown(sender, e);
+        };
+        control.MouseMove += (sender, e) =>
+        {
+            if (automationDragSource is not null)
+                return;
+            Timeline_MouseMove(sender, e);
+            Range_MouseMove(sender, e);
+        };
+        control.MouseUp += (sender, e) =>
+        {
+            if (automationDragSource is not null)
+            {
+                FinishAutomationDrag((Control)sender, e);
+                return;
+            }
+            Timeline_MouseUp(sender, e);
+            Range_MouseUp(sender, e);
+        };
+        control.MouseCaptureChanged += (sender, e) =>
+        {
+            if (automationDragSource is not null)
+            {
+                // Losing mouse capture cancels the gesture without changing audio.
+                CancelAutomationDrag();
+                return;
+            }
+            Timeline_MouseCaptureChanged(sender, e);
+            Range_MouseCaptureChanged(sender, e);
+        };
+    }
+
+    // Alt + Shift + click adds a point. Alt + right-click removes a nearby point.
+    // Both gestures run before normal range selection and timeline seeking.
+    private bool TryEditAutomationPoint(Control source, MouseEventArgs e)
+    {
+        if (source.Tag is not Track track || (ModifierKeys & Keys.Alt) == 0)
+            return false;
+
+        bool adding = e.Button == MouseButtons.Left && (ModifierKeys & Keys.Shift) != 0;
+        bool removing = e.Button == MouseButtons.Right;
+        if (!adding && !removing)
+            return false;
+
+        double scale = ZoomScale.Sanitize(trackManager.DrawTimescale);
+        double localFrame = trackManager.ViewStartFrame + e.X * scale - track.StartFrame;
+        if (localFrame < 0 || localFrame > track.TimelineFrameCount)
+            return true;
+
+        if (adding)
+        {
+            long frame = (long)Math.Clamp(
+                Math.Round(localFrame, MidpointRounding.AwayFromZero),
+                0, track.TimelineFrameCount);
+            float gain = Math.Clamp(
+                2f * (1f - (e.Y - 8f) / Math.Max(1f, source.ClientSize.Height - 16f)),
+                0f, 2f);
+            gain = MathF.Round(gain * 1000f) / 1000f;
+            track.SetAutomationPoint(frame / (double)track.SampleRate, gain);
+        }
+        else
+        {
+            int height = source.ClientSize.Height;
+            float GainY(float gain) =>
+                8 + (2f - Math.Clamp(gain, 0f, 2f)) / 2f * Math.Max(0, height - 16);
+
+            foreach (var point in track.AutomationPoints)
+            {
+                float x = (float)TimelineScale.PixelAtFrame(
+                    track.StartFrame + point.Frame, scale, trackManager.ViewStartFrame);
+                float y = GainY(point.Gain);
+                float dx = e.X - x;
+                float dy = e.Y - y;
+                if (dx * dx + dy * dy > 11 * 11)
+                    continue;
+
+                track.RemoveAutomationPoint(point.Frame / (double)track.SampleRate);
+                break;
+            }
+        }
+
+        source.Invalidate();
+        RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
+        return true;
+    }
+
+    private bool TryBeginAutomationDrag(Control source, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left || (ModifierKeys & Keys.Alt) == 0 ||
+            source.Tag is not Track track || track.AutomationPoints.Count == 0)
+            return false;
+
+        double scale = ZoomScale.Sanitize(trackManager.DrawTimescale);
+        int height = source.ClientSize.Height;
+        float GainY(float gain) => 8 + (2f - Math.Clamp(gain, 0f, 2f)) / 2f * Math.Max(0, height - 16);
+
+        // Only grab an actual purple point, within an 11-pixel radius.
+        foreach (var point in track.AutomationPoints)
+        {
+            float x = (float)TimelineScale.PixelAtFrame(
+                track.StartFrame + point.Frame, scale, trackManager.ViewStartFrame);
+            float y = GainY(point.Gain);
+            float dx = e.X - x;
+            float dy = e.Y - y;
+            if (dx * dx + dy * dy > 11 * 11)
+                continue;
+
+            EndRangeDrag();
+            EndTimelineDrag();
+            automationDragTrack = track;
+            automationDragSource = source;
+            automationDragOriginalFrame = point.Frame;
+            source.Cursor = Cursors.SizeAll;
+            if (source.Visible && source.IsHandleCreated)
+                source.Capture = true;
+            return true;
+        }
+        return false;
+    }
+
+    private void FinishAutomationDrag(Control source, MouseEventArgs e)
+    {
+        if (source != automationDragSource || e.Button != MouseButtons.Left ||
+            automationDragTrack is null)
+            return;
+
+        Track track = automationDragTrack;
+        long oldFrame = automationDragOriginalFrame;
+        double scale = ZoomScale.Sanitize(trackManager.DrawTimescale);
+        double timelineFrame = trackManager.ViewStartFrame + e.X * scale;
+        long newFrame = (long)Math.Clamp(
+            Math.Round(timelineFrame - track.StartFrame, MidpointRounding.AwayFromZero),
+            0, track.TimelineFrameCount);
+        float gain = Math.Clamp(
+            2f * (1f - (e.Y - 8f) / Math.Max(1f, source.ClientSize.Height - 16f)),
+            0f, 2f);
+        // Snap the percentage to one decimal place, matching the numeric editor.
+        gain = MathF.Round(gain * 1000f) / 1000f;
+
+        var original = track.AutomationPoints.FirstOrDefault(p => p.Frame == oldFrame);
+        CancelAutomationDrag();
+
+        if (oldFrame == newFrame && Math.Abs(original.Gain - gain) < 0.0005f)
+            return;
+
+        trackManager.ExecuteEdit(() =>
+        {
+            if (newFrame != oldFrame)
+                track.RemoveAutomationPoint(oldFrame / (double)track.SampleRate);
+            track.SetAutomationPoint(newFrame / (double)track.SampleRate, gain);
+        });
+        track.PanDrawSamples?.Invalidate();
+        RunPlaybackAction(trackManager.RefreshPlaybackAfterEdit);
+    }
+
+    private void CancelAutomationDrag()
+    {
+        Control previous = automationDragSource;
+        automationDragSource = null;
+        automationDragTrack = null;
+        automationDragOriginalFrame = 0;
+        if (previous is not null)
+        {
+            previous.Cursor = Cursors.Default;
+            if (previous.Capture)
+                previous.Capture = false;
+        }
     }
 
     private void Timeline_MouseDown(object sender, MouseEventArgs e)
