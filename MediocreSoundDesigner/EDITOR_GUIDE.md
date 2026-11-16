@@ -5,7 +5,7 @@ Open the solution in Visual Studio, select the desired local branch or `main`, t
 | Action | Control |
 | --- | --- |
 | Add audio | Open Audio button or File menu; Generate creates test sounds or records audio |
-| Select tracks | Click a header; Ctrl-click toggles tracks; Shift-click selects a range of rows |
+| Select tracks | Click a header; Ctrl-click a header, waveform or :: grip to toggle tracks; Shift-click selects a range of rows; Ctrl+Shift-click adds a range |
 | Move playhead | Click/drag the timestamp ruler, or right-click/right-drag a waveform |
 | Play / pause | Play/Pause button or Space; resumes at the shared playhead |
 | Stop | Stop button; resets the playhead to the beginning |
