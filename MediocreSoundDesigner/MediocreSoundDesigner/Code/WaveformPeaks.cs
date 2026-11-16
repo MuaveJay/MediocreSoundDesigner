@@ -104,13 +104,18 @@ public partial class Track
         using Pen pen = new(color);
         if (scale > 1)
         {
+            using Brush flatSamples = new SolidBrush(color);
             for (int x = left; x < right; x++)
             {
                 int first = (int)Math.Clamp(Math.Ceiling(viewStartFrame + x * scale - StartFrame), 0, TimelineFrameCount);
                 int end = (int)Math.Clamp(Math.Ceiling(viewStartFrame + (x + 1) * scale - StartFrame), 0, TimelineFrameCount);
                 if (first >= end) continue;
                 WaveformExtrema extrema = GetWaveformExtrema(first, end);
-                graphics.DrawLine(pen, x, Y(extrema.Maximum * Volume), x, Y(extrema.Minimum * Volume));
+                float top = Y(extrema.Maximum * Volume), bottom = Y(extrema.Minimum * Volume);
+                // GDI+ does not reliably rasterize a zero-length line. Keep a flat
+                // sample column visible, including silent and zero-volume clips.
+                if (top == bottom) graphics.FillRectangle(flatSamples, x, top, 1, 1);
+                else graphics.DrawLine(pen, x, top, x, bottom);
             }
         }
         else
