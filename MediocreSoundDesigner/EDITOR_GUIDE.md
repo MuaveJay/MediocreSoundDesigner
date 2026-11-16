@@ -28,9 +28,9 @@ Names and colors belong to the current session and Undo history. Export saves th
 
 ## Before the presentation
 
-- Verify the original split-boundary and right-drag rendering reports with the original audio in the rebuilt application (issues #35 and #26).
+- The split-boundary and right-drag rendering regressions (#35 and #26) are covered by exact-frame, quiet-boundary and byte-for-byte retained-versus-fresh repaint checks. When reviewing the presentation build, use the visible clip-edge marker to distinguish the true cut from quiet samples.
 - Try a real audio file, Play/Pause, Stop, looping, selected volume, split and range trim; compare what you hear with the ruler.
 - Try header renaming/color, reorder grips, edge scrolling, Ctrl/Shift selection, and Undo/Redo.
 - Maximize and restore, repeat F11/Escape, and check any monitors with different scaling.
 
-Automated tests use hidden forms, generated audio/canvases and fake audio output. They do not verify physical audio devices, native dialogs or the original screenshot reports hands-on.
+Automated tests use hidden forms, generated audio/canvases, repository WAV fixtures and fake audio output. They cover the reported editing/drag workflows without desktop capture; physical audio devices and native dialogs still need ordinary hands-on checking.
